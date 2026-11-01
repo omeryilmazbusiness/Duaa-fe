@@ -8,9 +8,11 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Handshake,
   MessageCircle,
   TimerOff,
   UserPlus,
+  Wrench,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -30,6 +32,8 @@ const KIND_ICON = {
   customer_voice: MessageCircle,
   reservations: CalendarDays,
   cash_variance: Banknote,
+  handover: Handshake,
+  breakdown: Wrench,
 } as const;
 
 export function DecisionCard({

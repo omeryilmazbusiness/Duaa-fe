@@ -44,6 +44,8 @@ export function ManagerTabBody({
         <FeedbackTab
           workspaceId={wid}
           canAssign={session.scope === "general_manager" || session.scope === "department_manager"}
+          canRotate={session.scope === "general_manager" || session.scope === "floor_ops"}
+          onOpenTab={onOpenTab}
         />
       );
     case "requests":

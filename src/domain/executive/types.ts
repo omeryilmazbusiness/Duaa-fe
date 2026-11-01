@@ -6,6 +6,11 @@ export interface BriefPulse {
   overdueTasks: number;
   openTasks: number;
   completedToday: number;
+  openRecoveries: number;
+  lateRecoveries: number;
+  openBreakdowns: number;
+  handoverOpen: boolean;
+  intakeWritten: boolean;
 }
 
 export interface BriefHeadline {

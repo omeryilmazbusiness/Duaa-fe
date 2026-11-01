@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowUp, MessageSquarePlus, Sparkles, X } from "lucide-react";
+import { ArrowUp, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { chatTitle } from "@/domain/assistant/desk";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   canSend,
@@ -36,12 +37,16 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
   const { t, locale } = useLocale();
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const onFailed = useCallback((text: string) => setDraft(text), []);
+  const onFailed = useCallback((text: string, tabId: string) => {
+    setDrafts((cur) => ({ ...cur, [tabId]: text }));
+  }, []);
   const chat = useAssistantChat({ workspaceId: session.workspace.id, locale, onFailed });
+  const draft = drafts[chat.activeId] ?? "";
+  const setDraft = (text: string) => setDrafts((cur) => ({ ...cur, [chat.activeId]: text }));
   const exhausted = usage.remaining <= 0;
   const sendable = canSend(draft, chat.pending, usage.remaining);
 
@@ -114,15 +119,16 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
               <button
                 type="button"
                 onClick={() => {
-                  chat.reset();
-                  setDraft("");
+                  chat.clearAll();
+                  setDrafts({});
                 }}
-                disabled={chat.messages.length === 0 && !chat.pending}
-                aria-label={t.aiNewChat}
-                title={t.aiNewChat}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-30"
+                disabled={chat.desk.tabs.every((tab) => tab.messages.length === 0) && !chat.pending}
+                aria-label={t.aiClearAll}
+                title={t.aiClearAll}
+                data-testid="ai-remove-chats"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
               >
-                <MessageSquarePlus className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </button>
               <button
                 type="button"
@@ -133,6 +139,57 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
                 <X className="h-4 w-4" />
               </button>
             </header>
+
+            <div className="relative flex items-center gap-1 px-4 pb-2" role="tablist" aria-label={t.aiName}>
+              {chat.desk.tabs.map((tab, index) => {
+                const label = chatTitle(tab.messages, t.aiChatTab.replace("{n}", String(index + 1)));
+                const selected = tab.id === chat.activeId;
+                return (
+                  <div
+                    key={tab.id}
+                    className={cn(
+                      "flex min-w-0 items-center rounded-full border px-1",
+                      selected ? "border-violet-200 bg-violet-50" : "border-zinc-200 bg-white",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      title={label}
+                      onClick={() => chat.pickTab(tab.id)}
+                      className={cn(
+                        "max-w-[88px] truncate px-2 py-1 text-[11px] font-semibold",
+                        selected ? "text-violet-800" : "text-zinc-500",
+                      )}
+                    >
+                      {label}
+                    </button>
+                    {chat.desk.tabs.length > 1 ? (
+                      <button
+                        type="button"
+                        aria-label={t.aiCloseTab}
+                        onClick={() => chat.removeTab(tab.id)}
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    ) : null}
+                  </div>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => chat.addTab()}
+                disabled={!chat.canAddTab}
+                aria-label={t.aiNewChat}
+                title={chat.canAddTab ? t.aiNewChat : t.aiMaxTabs}
+                data-testid="ai-new-tab"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-30"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
             <UsageMeter usage={usage} label={t.aiUsage} />
 
@@ -146,8 +203,8 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
                   onPick={submit}
                 />
               ) : (
-                chat.messages.map((m) => (
-                  <Bubble key={m.id} role={m.role} content={m.content} streaming={m.id === chat.streamingId} />
+                chat.messages.map((m, i) => (
+                  <Bubble key={`${m.id}:${i}`} role={m.role} content={m.content} streaming={m.id === chat.streamingId} />
                 ))
               )}
               {chat.pending ? <Thinking label={t.aiThinking} /> : null}

@@ -5,6 +5,8 @@ import { personInitials } from "@/domain/session/types";
 describe("settings panes", () => {
   it("accepts known panes and falls back to root", () => {
     expect(parseSettingsPane("ai")).toBe("ai");
+    expect(parseSettingsPane("cafe")).toBe("cafe");
+    expect(parseSettingsPane("qr")).toBe("qr");
     expect(parseSettingsPane("TEAM")).toBe("team");
     expect(parseSettingsPane("language")).toBe("language");
     expect(parseSettingsPane(null)).toBe("root");

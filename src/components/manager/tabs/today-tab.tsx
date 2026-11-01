@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CheckCircle2, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff } from "lucide-react";
+import { Banknote, CheckCircle2, ClipboardCheck, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardCommandBar } from "@/components/dashboard/command-bar";
@@ -12,7 +12,7 @@ import { DecisionCard } from "@/components/manager/decision-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ManagerTab } from "@/domain/catalog";
 import type { ActCommand, BriefView, DecisionAction } from "@/domain/executive";
-import { emptyBriefKey, headlineParts, sourceCopyKey, todayKpis } from "@/domain/executive/look";
+import { emptyBriefKey, floorKpis, headlineParts, sourceCopyKey, todayKpis } from "@/domain/executive/look";
 import type { SessionPayload } from "@/domain/session/types";
 import { formatTimeRange } from "@/lib/format";
 import { kernel } from "@/lib/kernel";
@@ -27,6 +27,10 @@ const KPI_ICON: Record<string, LucideIcon> = {
   overdue: TimerOff,
   open: ListTodo,
   done: CheckCircle2,
+  recoveries: MessageSquare,
+  breakdowns: Wrench,
+  handover: Handshake,
+  close: ClipboardCheck,
 };
 
 function composeHeadline(t: Messages, brief: BriefView): string {
@@ -67,8 +71,18 @@ export function TodayTab({
     onError: (err: Error) => toast.error(err instanceof ApiError ? err.message : err.message),
   });
 
-  const pulse = brief.data?.pulse ?? { overdueTasks: 0, openTasks: 0, completedToday: 0 };
+  const pulse = brief.data?.pulse ?? {
+    overdueTasks: 0,
+    openTasks: 0,
+    completedToday: 0,
+    openRecoveries: 0,
+    lateRecoveries: 0,
+    openBreakdowns: 0,
+    handoverOpen: false,
+    intakeWritten: false,
+  };
   const kpis = todayKpis(pulse);
+  const floor = floorKpis(pulse);
   const personnel = (staff.data ?? []).filter((m) => m.role === "personnel" && m.isActive);
   const overdueItems = (tasks.data ?? [])
     .filter((task) => task.isOverdue)
@@ -130,6 +144,21 @@ export function TodayTab({
         ))}
       </div>
 
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" data-testid="today-floor">
+        {floor.map((kpi) => (
+          <StatTile
+            key={kpi.id}
+            label={t[kpi.labelKey]}
+            value={kpi.value}
+            caption={kpi.captionKey ? t[kpi.captionKey] : undefined}
+            tone={kpi.tone}
+            icon={KPI_ICON[kpi.id] ?? ListTodo}
+            onClick={session.tabs.includes("feedback") ? () => onOpenTab("feedback") : undefined}
+            testId={`today-floor-${kpi.id}`}
+          />
+        ))}
+      </div>
+
       {brief.isLoading ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-48 rounded-[28px]" />
@@ -179,7 +208,19 @@ export function TodayTab({
                   return (
                     <MetricTile
                       key={src.kind}
-                      icon={src.kind === "cash_variance" ? Banknote : src.kind === "customer_voice" ? MessageSquare : TimerOff}
+                      icon={
+                        src.kind === "cash_variance"
+                          ? Banknote
+                          : src.kind === "customer_voice"
+                            ? MessageSquare
+                            : src.kind === "handover"
+                              ? Handshake
+                              : src.kind === "breakdown"
+                                ? Wrench
+                                : src.kind === "daily_close"
+                                  ? ClipboardCheck
+                                  : TimerOff
+                      }
                       tone={src.status === "live" ? "emerald" : "zinc"}
                       value={src.status === "live" ? t.sourceLive : "—"}
                       label={label ? t[label] : src.kind.replaceAll("_", " ")}

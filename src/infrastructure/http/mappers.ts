@@ -9,6 +9,20 @@ import type {
   AssistantUsage,
   ChatReply,
 } from "@/domain/assistant/types";
+import {
+  isCafeArea,
+  isCafePOSStatus,
+  type CafeBranch,
+  type CafeCompleteness,
+  type CafeDefinition,
+  type CafeMissing,
+  type CafeQRSite,
+  type CafeShift,
+  type CafeSLA,
+} from "@/domain/cafe/definition";
+import type { CafeHandover, CafeHandoverRef } from "@/domain/cafe/handover";
+import type { CafeIntake } from "@/domain/cafe/intake";
+import { isVoiceKind, type CafeQRCode, type CafeVoice, type PublicQR } from "@/domain/cafe/qr";
 import type {
   DashboardApproval,
   DashboardCash,
@@ -178,6 +192,11 @@ export function mapBrief(raw: unknown): BriefView {
       overdueTasks: num(pulse.overdueTasks),
       openTasks: num(pulse.openTasks),
       completedToday: num(pulse.completedToday),
+      openRecoveries: num(pulse.openRecoveries),
+      lateRecoveries: num(pulse.lateRecoveries),
+      openBreakdowns: num(pulse.openBreakdowns),
+      handoverOpen: bool(pulse.handoverOpen),
+      intakeWritten: bool(pulse.intakeWritten),
     },
     cards: cards.map(mapCard),
     sources: sources.map((item) => {
@@ -233,7 +252,11 @@ export function mapDecision(raw: unknown): DecisionView {
 }
 
 export function mapList<T>(raw: unknown, map: (item: unknown) => T): T[] {
-  return Array.isArray(raw) ? raw.map(map) : [];
+  if (Array.isArray(raw)) return raw.map(map);
+  if (raw && typeof raw === "object" && Array.isArray((raw as { items?: unknown }).items)) {
+    return ((raw as { items: unknown[] }).items).map(map);
+  }
+  return [];
 }
 
 const REPORT_KINDS = new Set<ReportKind>(["breakage", "request"]);
@@ -434,4 +457,187 @@ export function mapAssistantStatus(raw: unknown): AssistantStatus {
 export function mapChatReply(raw: unknown): ChatReply {
   const r = (raw ?? {}) as Record<string, unknown>;
   return { reply: str(r.reply), usage: mapUsage(r.usage) };
+}
+
+const CAFE_MISSING = new Set(["name", "timezone", "currency", "branch", "qr_site", "sla"]);
+
+export function mapCafeDefinition(raw: unknown): CafeDefinition {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const sla = (r.sla ?? {}) as Record<string, unknown>;
+  const completeness = (r.completeness ?? {}) as Record<string, unknown>;
+  const pos = str(r.posStatus, "unknown");
+  return {
+    workspaceId: str(r.workspaceId),
+    displayName: str(r.displayName),
+    currency: str(r.currency).toUpperCase(),
+    timezone: str(r.timezone),
+    posVendor: str(r.posVendor),
+    posStatus: isCafePOSStatus(pos) ? pos : "unknown",
+    branches: Array.isArray(r.branches) ? r.branches.map(mapCafeBranch) : [],
+    qrSites: Array.isArray(r.qrSites) ? r.qrSites.map(mapCafeQR) : [],
+    shifts: Array.isArray(r.shifts) ? r.shifts.map(mapCafeShift) : [],
+    sla: {
+      ackMinutes: Math.max(0, num(sla.ackMinutes)),
+      resolveMinutes: Math.max(0, num(sla.resolveMinutes)),
+      afterHoursMessage: str(sla.afterHoursMessage),
+      compensationLimit: Math.max(0, num(sla.compensationLimit)),
+      compensationCurrency: str(sla.compensationCurrency).toUpperCase(),
+    } satisfies CafeSLA,
+    completeness: {
+      readyForReviews: bool(completeness.readyForReviews),
+      hasName: bool(completeness.hasName),
+      hasTimezone: bool(completeness.hasTimezone),
+      hasCurrency: bool(completeness.hasCurrency),
+      hasBranch: bool(completeness.hasBranch),
+      hasQRSite: bool(completeness.hasQRSite),
+      hasSLA: bool(completeness.hasSLA),
+      missing: Array.isArray(completeness.missing)
+        ? completeness.missing.map((k) => str(k)).filter((k): k is CafeMissing => CAFE_MISSING.has(k))
+        : [],
+    } satisfies CafeCompleteness,
+    canWrite: bool(r.canWrite),
+    persisted: bool(r.persisted),
+    updatedAt: str(r.updatedAt),
+  };
+}
+
+function mapCafeBranch(raw: unknown): CafeBranch {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return { id: str(r.id), name: str(r.name), address: str(r.address), active: bool(r.active) };
+}
+
+function mapCafeQR(raw: unknown): CafeQRSite {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const area = str(r.area, "other");
+  return {
+    id: str(r.id),
+    branchId: str(r.branchId),
+    label: str(r.label),
+    area: isCafeArea(area) ? area : "other",
+    active: bool(r.active),
+  };
+}
+
+function mapCafeShift(raw: unknown): CafeShift {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return { id: str(r.id), name: str(r.name), start: str(r.start), end: str(r.end) };
+}
+
+export function mapCafeQRCode(raw: unknown): CafeQRCode {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    siteId: str(r.siteId),
+    label: str(r.label),
+    area: str(r.area),
+    branch: str(r.branch),
+    active: bool(r.active),
+    token: str(r.token),
+    publicPath: str(r.publicPath),
+    publicUrl: str(r.publicUrl),
+    imagePath: str(r.imagePath),
+    issuedAt: str(r.issuedAt),
+  };
+}
+
+export function mapCafeVoice(raw: unknown): CafeVoice {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const kind = str(r.kind, "review");
+  return {
+    id: str(r.id),
+    siteId: str(r.siteId),
+    label: str(r.label),
+    area: str(r.area),
+    kind: isVoiceKind(kind) ? kind : "review",
+    rating: num(r.rating),
+    comment: str(r.comment),
+    contactName: str(r.contactName),
+    contactPhone: str(r.contactPhone),
+    unhappy: bool(r.unhappy),
+    needsRecovery: bool(r.needsRecovery),
+    recoveryId: str(r.recoveryId),
+    recoveryStatus: r.recoveryStatus === "open" || r.recoveryStatus === "assigned" || r.recoveryStatus === "closed" ? r.recoveryStatus : "",
+    assigneeUserId: str(r.assigneeUserId),
+    linkedTaskId: str(r.linkedTaskId),
+    compensationAmount: num(r.compensationAmount),
+    compensationCurrency: str(r.compensationCurrency),
+    compensationLimit: num(r.compensationLimit),
+    ackDue: str(r.ackDue),
+    resolveDue: str(r.resolveDue),
+    lateAck: bool(r.lateAck),
+    lateResolve: bool(r.lateResolve),
+    createdAt: str(r.createdAt),
+  };
+}
+
+export function mapPublicQR(raw: unknown): PublicQR {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    cafeName: str(r.cafeName),
+    label: str(r.label),
+    area: str(r.area),
+    branch: str(r.branch),
+    reviewsOpen: bool(r.reviewsOpen),
+    ackMinutes: num(r.ackMinutes),
+    afterHoursMessage: str(r.afterHoursMessage),
+    timezone: str(r.timezone),
+  };
+}
+
+export function mapCafeIntake(raw: unknown): CafeIntake {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const shifts = Array.isArray(r.shifts) ? r.shifts.filter((s): s is string => typeof s === "string" && s.trim() !== "") : [];
+  return {
+    id: str(r.id),
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    shiftName: str(r.shiftName),
+    shifts,
+    closeNote: str(r.closeNote),
+    wasteNote: str(r.wasteNote),
+    incidentNote: str(r.incidentNote),
+    authorUserId: str(r.authorUserId),
+    authorName: str(r.authorName),
+    persisted: bool(r.persisted),
+    canWrite: bool(r.canWrite),
+    updatedAt: str(r.updatedAt),
+  };
+}
+
+function mapHandoverRef(raw: unknown): CafeHandoverRef | null {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const id = str(r.id);
+  if (!id) return null;
+  return { id, title: str(r.title) };
+}
+
+function mapHandoverRefs(raw: unknown): CafeHandoverRef[] {
+  return Array.isArray(raw) ? raw.map(mapHandoverRef).filter((x): x is CafeHandoverRef => x !== null) : [];
+}
+
+export function mapCafeHandover(raw: unknown): CafeHandover {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const shifts = Array.isArray(r.shifts) ? r.shifts.filter((s): s is string => typeof s === "string" && s.trim() !== "") : [];
+  const status = str(r.status);
+  return {
+    id: str(r.id),
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    fromShift: str(r.fromShift),
+    toShift: str(r.toShift),
+    status: status === "open" || status === "accepted" ? status : "",
+    note: str(r.note),
+    shifts,
+    tasks: mapHandoverRefs(r.tasks),
+    recoveries: mapHandoverRefs(r.recoveries),
+    breakdowns: mapHandoverRefs(r.breakdowns),
+    openedBy: str(r.openedBy),
+    openedByName: str(r.openedByName),
+    acceptedBy: str(r.acceptedBy),
+    acceptedByName: str(r.acceptedByName),
+    persisted: bool(r.persisted),
+    canWrite: bool(r.canWrite),
+    openedAt: str(r.openedAt),
+    acceptedAt: str(r.acceptedAt),
+    updatedAt: str(r.updatedAt),
+  };
 }

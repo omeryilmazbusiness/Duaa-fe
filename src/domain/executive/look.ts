@@ -16,6 +16,16 @@ export const TODAY_KPIS: readonly TodayKpiSpec[] = [
   { id: "done", tone: "emerald", valueKey: "completedToday", labelKey: "completedToday" },
 ];
 
+export type FloorKpiId = "recoveries" | "breakdowns" | "handover" | "close";
+
+export interface FloorKpi {
+  id: FloorKpiId;
+  tone: Tone;
+  value: number;
+  labelKey: "floorRecoveries" | "floorBreakdowns" | "floorHandover" | "floorClose";
+  captionKey: "floorLate" | "floorHandoverOpen" | "floorHandoverQuiet" | "floorCloseWritten" | "floorCloseOpen" | null;
+}
+
 export type HeadlinePartKey =
   | "headlineOverdue"
   | "headlineOverdueOne"
@@ -30,14 +40,60 @@ export interface HeadlinePart {
   n: number;
 }
 
-export type CardIconKey = "late_staff" | "customer_voice" | "reservations" | "cash_variance";
+export type CardIconKey = "late_staff" | "customer_voice" | "reservations" | "cash_variance" | "handover" | "breakdown";
 
-export type CardTitleKey = "overdueTasks" | "reviewInbox" | "allClear" | "cashVariance";
+export type CardTitleKey =
+  | "overdueTasks"
+  | "reviewInbox"
+  | "allClear"
+  | "cashVariance"
+  | "floorHandover"
+  | "floorBreakdowns";
 
-export type SourceCopyKey = "sourceLateStaff" | "sourceCustomerVoice" | "sourceReservations" | "sourceCash";
+export type SourceCopyKey =
+  | "sourceLateStaff"
+  | "sourceCustomerVoice"
+  | "sourceReservations"
+  | "sourceCash"
+  | "sourceHandover"
+  | "sourceBreakdown"
+  | "sourceDailyClose";
 
 export function todayKpis(pulse: BriefView["pulse"]): Array<TodayKpiSpec & { value: number }> {
   return TODAY_KPIS.map((spec) => ({ ...spec, value: pulse[spec.valueKey] }));
+}
+
+export function floorKpis(pulse: BriefView["pulse"]): FloorKpi[] {
+  return [
+    {
+      id: "recoveries",
+      tone: pulse.lateRecoveries > 0 ? "rose" : "sky",
+      value: pulse.openRecoveries,
+      labelKey: "floorRecoveries",
+      captionKey: pulse.lateRecoveries > 0 ? "floorLate" : null,
+    },
+    {
+      id: "breakdowns",
+      tone: "rose",
+      value: pulse.openBreakdowns,
+      labelKey: "floorBreakdowns",
+      captionKey: null,
+    },
+    {
+      id: "handover",
+      tone: "violet",
+      value: pulse.handoverOpen ? 1 : 0,
+      labelKey: "floorHandover",
+      captionKey: pulse.handoverOpen ? "floorHandoverOpen" : "floorHandoverQuiet",
+    },
+    {
+      id: "close",
+      tone: "teal",
+      value: pulse.intakeWritten ? 1 : 0,
+      labelKey: "floorClose",
+      captionKey: pulse.intakeWritten ? "floorCloseWritten" : "floorCloseOpen",
+    },
+  ];
 }
 
 export function headlineParts(brief: BriefView): HeadlinePart[] {
@@ -64,10 +120,12 @@ export function emptyBriefKey(brief: BriefView): "allClear" | "handledUntilTomor
 export function cardTone(kind: string): Tone {
   switch (kind) {
     case "late_staff":
+    case "breakdown":
       return "rose";
     case "customer_voice":
       return "sky";
     case "reservations":
+    case "handover":
       return "violet";
     case "cash_variance":
       return "amber";
@@ -77,7 +135,14 @@ export function cardTone(kind: string): Tone {
 }
 
 export function cardIconKey(kind: string): CardIconKey {
-  if (kind === "late_staff" || kind === "customer_voice" || kind === "reservations" || kind === "cash_variance") {
+  if (
+    kind === "late_staff" ||
+    kind === "customer_voice" ||
+    kind === "reservations" ||
+    kind === "cash_variance" ||
+    kind === "handover" ||
+    kind === "breakdown"
+  ) {
     return kind;
   }
   return "late_staff";
@@ -93,6 +158,10 @@ export function cardTitleKey(titleKey: string): CardTitleKey | null {
       return "allClear";
     case "brief.cashVariance":
       return "cashVariance";
+    case "brief.handover":
+      return "floorHandover";
+    case "brief.breakdowns":
+      return "floorBreakdowns";
     default:
       return null;
   }
@@ -108,6 +177,12 @@ export function sourceCopyKey(kind: string): SourceCopyKey | null {
       return "sourceReservations";
     case "cash_variance":
       return "sourceCash";
+    case "handover":
+      return "sourceHandover";
+    case "breakdown":
+      return "sourceBreakdown";
+    case "daily_close":
+      return "sourceDailyClose";
     default:
       return null;
   }

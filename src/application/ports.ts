@@ -6,6 +6,10 @@ import type {
   ChatReply,
   ChatRole,
 } from "@/domain/assistant/types";
+import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
+import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
+import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
+import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
 import type { DashboardView } from "@/domain/dashboard/types";
 import type { ActCommand, BriefView, DecisionView } from "@/domain/executive";
 import type { ApprovalAction, CashCloseView, SpendApproval } from "@/domain/finance/types";
@@ -120,6 +124,28 @@ export interface FinancePort {
   ): Promise<SpendApproval>;
 }
 
+export interface CafePort {
+  getCafeDefinition(workspaceId: string): Promise<CafeDefinition>;
+  saveCafeDefinition(workspaceId: string, input: CafeDefinitionSave): Promise<CafeDefinition>;
+  listCafeQR(workspaceId: string): Promise<CafeQRCode[]>;
+  issueCafeTable(workspaceId: string, tableNumber: string): Promise<CafeQRCode>;
+  renameCafeTable(workspaceId: string, siteId: string, tableNumber: string): Promise<CafeQRCode>;
+  rotateCafeQR(workspaceId: string, siteId: string): Promise<CafeQRCode>;
+  listCafeVoices(workspaceId: string): Promise<CafeVoice[]>;
+  actOnCafeVoice(
+    workspaceId: string,
+    voiceId: string,
+    input: { action: RecoveryAction; assigneeUserId?: string; note?: string; amount?: number },
+  ): Promise<CafeVoice>;
+  resolvePublicQR(token: string): Promise<PublicQR>;
+  submitPublicQR(token: string, input: PublicQRSubmit): Promise<CafeVoice>;
+  getCafeIntake(workspaceId: string, date?: string): Promise<CafeIntake>;
+  saveCafeIntake(workspaceId: string, input: CafeIntakeSave): Promise<CafeIntake>;
+  getCafeHandover(workspaceId: string): Promise<CafeHandover>;
+  openCafeHandover(workspaceId: string, input: CafeHandoverOpen): Promise<CafeHandover>;
+  acceptCafeHandover(workspaceId: string, handoverId: string): Promise<CafeHandover>;
+}
+
 export interface AssistantPort {
   getAssistantStatus(workspaceId: string): Promise<AssistantStatus>;
   getAssistantSettings(workspaceId: string): Promise<AssistantSettings>;
@@ -140,4 +166,5 @@ export interface KernelApi
     ReportPort,
     DashboardPort,
     FinancePort,
-    AssistantPort {}
+    AssistantPort,
+    CafePort {}

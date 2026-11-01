@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Check, ChevronRight, Globe, Settings, Sparkles, Users } from "lucide-react";
+import { Briefcase, Check, ChevronRight, Globe, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
 import { displayName, personInitials, type SessionPayload } from "@/domain/session/types";
 import type { SettingsPane } from "@/domain/settings/pane";
 import {
@@ -13,6 +13,8 @@ import {
   IosScreen,
 } from "@/components/ios/ios-settings";
 import { AssistantSettingsCard } from "@/components/assistant/assistant-settings-card";
+import { CafeDefinitionCard } from "@/components/settings/cafe-definition-card";
+import { CafeTableQR } from "@/components/settings/cafe-table-qr";
 import { TeamTab } from "@/components/manager/tabs/team-tab";
 import { useAssistantStatus } from "@/components/assistant/use-assistant";
 import { LOCALES, type Messages, type StaffLocale } from "@/lib/i18n";
@@ -104,6 +106,28 @@ function SettingsList({
       </button>
 
       <IosGroup header={t.settingsGroupWorkspace}>
+        {session.workspace.kind === "cafe" ? (
+          <IosRow
+            icon={<IosGlyph icon={Store} tone="amber" className={pane === "cafe" ? "ring-1 ring-white/40" : undefined} />}
+            title={t.cafeTitle}
+            subtitle={t.settingsHintCafe}
+            chevron
+            active={pane === "cafe"}
+            onClick={() => onPane("cafe")}
+            testId="settings-row-cafe"
+          />
+        ) : null}
+        {session.workspace.kind === "cafe" ? (
+          <IosRow
+            icon={<IosGlyph icon={QrCode} tone="teal" className={pane === "qr" ? "ring-1 ring-white/40" : undefined} />}
+            title={t.qrTitle}
+            subtitle={t.settingsHintQR}
+            chevron
+            active={pane === "qr"}
+            onClick={() => onPane("qr")}
+            testId="settings-row-qr"
+          />
+        ) : null}
         <IosRow
           icon={<IosGlyph icon={Sparkles} tone="violet" className={pane === "ai" ? "ring-1 ring-white/40" : undefined} />}
           title={t.aiSettingsTitle}
@@ -158,6 +182,28 @@ function SettingsDetail({
 }) {
   const { t } = useLocale();
   if (pane === "root") return <SettingsWelcome />;
+  if (pane === "cafe" && session.workspace.kind === "cafe") {
+    return (
+      <article className="space-y-6" data-testid="settings-detail-cafe">
+        <IosNavBar backLabel={t.settings} onBack={() => onPane("root")} />
+        <DetailHeader icon={Store} tone="amber" title={t.cafeTitle} description={t.cafeHint} />
+        <CafeDefinitionCard session={session} />
+      </article>
+    );
+  }
+  if (pane === "qr" && session.workspace.kind === "cafe") {
+    return (
+      <article className="space-y-6" data-testid="settings-detail-qr">
+        <IosNavBar backLabel={t.settings} onBack={() => onPane("root")} />
+        <DetailHeader icon={QrCode} tone="teal" title={t.qrTitle} description={t.qrPaneHint} />
+        <CafeTableQR
+          workspaceId={session.workspace.id}
+          canIssue={session.scope === "general_manager"}
+          canRotate={session.scope === "general_manager" || session.scope === "floor_ops"}
+        />
+      </article>
+    );
+  }
   if (pane === "ai") {
     return (
       <article className="space-y-6" data-testid="settings-detail-ai">
@@ -186,7 +232,7 @@ function DetailHeader({
   description,
 }: {
   icon: typeof Sparkles;
-  tone: "violet" | "sky" | "teal";
+  tone: "violet" | "sky" | "teal" | "amber";
   title: string;
   description: string;
 }) {

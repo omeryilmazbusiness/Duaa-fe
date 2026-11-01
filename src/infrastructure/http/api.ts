@@ -7,6 +7,10 @@ import type {
   ChatReply,
   ChatRole,
 } from "@/domain/assistant/types";
+import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
+import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
+import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
+import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
 import type { DashboardView } from "@/domain/dashboard/types";
 import type { ActCommand, BriefView, DecisionView } from "@/domain/executive";
 import type { ApprovalAction, CashCloseView, SpendApproval } from "@/domain/finance/types";
@@ -19,6 +23,12 @@ import {
   mapAssistantModels,
   mapAssistantSettings,
   mapAssistantStatus,
+  mapCafeDefinition,
+  mapCafeHandover,
+  mapCafeIntake,
+  mapCafeQRCode,
+  mapCafeVoice,
+  mapPublicQR,
   mapChatReply,
   mapBrief,
   mapCashClose,
@@ -307,5 +317,109 @@ export class HttpKernelApi implements KernelApi {
         body: JSON.stringify(input),
       })
       .then(mapChatReply);
+  }
+
+  getCafeDefinition(workspaceId: string): Promise<CafeDefinition> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/definition`).then(mapCafeDefinition);
+  }
+
+  saveCafeDefinition(workspaceId: string, input: CafeDefinitionSave): Promise<CafeDefinition> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/definition`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      })
+      .then(mapCafeDefinition);
+  }
+
+  listCafeQR(workspaceId: string): Promise<CafeQRCode[]> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/qr`).then((r) => mapList(r, mapCafeQRCode));
+  }
+
+  issueCafeTable(workspaceId: string, tableNumber: string): Promise<CafeQRCode> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/qr/tables`, {
+        method: "POST",
+        body: JSON.stringify({ tableNumber }),
+      })
+      .then(mapCafeQRCode);
+  }
+
+  renameCafeTable(workspaceId: string, siteId: string, tableNumber: string): Promise<CafeQRCode> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/qr/${siteId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ tableNumber }),
+      })
+      .then(mapCafeQRCode);
+  }
+
+  rotateCafeQR(workspaceId: string, siteId: string): Promise<CafeQRCode> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/qr/${siteId}/rotate`, { method: "POST", body: "{}" })
+      .then(mapCafeQRCode);
+  }
+
+  listCafeVoices(workspaceId: string): Promise<CafeVoice[]> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/voices`).then((r) => mapList(r, mapCafeVoice));
+  }
+
+  actOnCafeVoice(
+    workspaceId: string,
+    voiceId: string,
+    input: { action: RecoveryAction; assigneeUserId?: string; note?: string; amount?: number },
+  ): Promise<CafeVoice> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/voices/${voiceId}/act`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapCafeVoice);
+  }
+
+  resolvePublicQR(token: string): Promise<PublicQR> {
+    return this.http.request(`/v1/public/qr/${token}`).then(mapPublicQR);
+  }
+
+  submitPublicQR(token: string, input: PublicQRSubmit): Promise<CafeVoice> {
+    return this.http
+      .request(`/v1/public/qr/${token}`, { method: "POST", body: JSON.stringify(input) })
+      .then(mapCafeVoice);
+  }
+
+  getCafeIntake(workspaceId: string, date?: string): Promise<CafeIntake> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/intake${q}`).then(mapCafeIntake);
+  }
+
+  saveCafeIntake(workspaceId: string, input: CafeIntakeSave): Promise<CafeIntake> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/intake`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      })
+      .then(mapCafeIntake);
+  }
+
+  getCafeHandover(workspaceId: string): Promise<CafeHandover> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/handover`).then(mapCafeHandover);
+  }
+
+  openCafeHandover(workspaceId: string, input: CafeHandoverOpen): Promise<CafeHandover> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/handover`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapCafeHandover);
+  }
+
+  acceptCafeHandover(workspaceId: string, handoverId: string): Promise<CafeHandover> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/handover/${handoverId}/accept`, {
+        method: "POST",
+        body: "{}",
+      })
+      .then(mapCafeHandover);
   }
 }

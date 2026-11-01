@@ -23,6 +23,6 @@ export const cafeCatalog: VerticalCatalog = {
   gmTabs: () => GM_TABS,
   departmentManagerTabs: () => DEPT_TABS,
   floorOpsTabs: () => FLOOR_TABS,
-  executiveSignals: () => ["late_staff", "customer_voice", "cash_variance"],
+  executiveSignals: () => ["handover", "late_staff", "customer_voice", "breakdown", "daily_close", "cash_variance"],
   dashboardModules: () => ["pulse", "reports", "cash", "approvals", "sales", "waste"],
 };

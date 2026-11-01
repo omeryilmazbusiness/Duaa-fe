@@ -11,4 +11,10 @@ export const qk = {
   assistantStatus: (wid: string) => ["assistant", "status", wid] as const,
   assistantModels: (wid: string) => ["assistant", "models", wid] as const,
   assistantSettings: (wid: string) => ["assistant", "settings", wid] as const,
+  cafeDefinition: (wid: string) => ["cafe", "definition", wid] as const,
+  cafeQR: (wid: string) => ["cafe", "qr", wid] as const,
+  cafeVoices: (wid: string) => ["cafe", "voices", wid] as const,
+  cafeIntake: (wid: string) => ["cafe", "intake", wid] as const,
+  cafeHandover: (wid: string) => ["cafe", "handover", wid] as const,
+  publicQR: (token: string) => ["public", "qr", token] as const,
 };

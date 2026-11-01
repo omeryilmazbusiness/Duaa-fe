@@ -20,4 +20,10 @@ export function localeDir(locale: StaffLocale): "ltr" | "rtl" {
   return locale === "ar" ? "rtl" : "ltr";
 }
 
+export function localeNameKey(locale: StaffLocale): "localeEnglish" | "localeTurkish" | "localeArabic" {
+  if (locale === "tr") return "localeTurkish";
+  if (locale === "ar") return "localeArabic";
+  return "localeEnglish";
+}
+
 export type { Messages };
