@@ -7,6 +7,7 @@ import type {
   ChatRole,
 } from "@/domain/assistant/types";
 import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
+import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
 import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
@@ -122,6 +123,7 @@ export interface FinancePort {
     approvalId: string,
     input: { action?: ApprovalAction; amount?: number },
   ): Promise<SpendApproval>;
+  attachApprovalEvidence(workspaceId: string, approvalId: string, evidence: string): Promise<SpendApproval>;
 }
 
 export interface CafePort {
@@ -144,6 +146,9 @@ export interface CafePort {
   getCafeHandover(workspaceId: string): Promise<CafeHandover>;
   openCafeHandover(workspaceId: string, input: CafeHandoverOpen): Promise<CafeHandover>;
   acceptCafeHandover(workspaceId: string, handoverId: string): Promise<CafeHandover>;
+  getCafeChecklist(workspaceId: string, date?: string): Promise<CafeChecklist>;
+  saveCafeChecklist(workspaceId: string, items: CafeCheckDraft[]): Promise<CafeChecklist>;
+  toggleCafeChecklist(workspaceId: string, input: { businessDate?: string; itemId: string }): Promise<CafeChecklist>;
 }
 
 export interface AssistantPort {

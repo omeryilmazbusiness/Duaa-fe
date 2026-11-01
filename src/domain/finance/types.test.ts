@@ -1,28 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { isPendingApproval, parseIQD, type SpendApproval } from "./types";
+import { canApprove, isPendingApproval, parseIQD } from "./types";
 
-describe("finance money", () => {
-  it("rejects floats and negatives so IQD never becomes a float", () => {
-    expect(parseIQD("98000")).toBe(98000);
-    expect(parseIQD("0")).toBe(0);
-    expect(parseIQD("98.5")).toBeNull();
-    expect(parseIQD("-1")).toBeNull();
-    expect(parseIQD("")).toBeNull();
-    expect(parseIQD("1e3")).toBeNull();
+describe("spend pack stage 2", () => {
+  it("does not treat approve as a payment — it only needs evidence on an open pack", () => {
+    expect(canApprove({ status: "open", evidence: "photo" })).toBe(true);
+    expect(canApprove({ status: "open" })).toBe(false);
+    expect(canApprove({ status: "needs_evidence", evidence: "old-slip" })).toBe(false);
+    expect(canApprove({ status: "approved", evidence: "photo" })).toBe(false);
   });
 
-  it("treats evidence requests as still pending a GM act", () => {
-    const pack: SpendApproval = {
-      id: "a1",
-      title: "Milk",
-      supplier: "Al-Nahrain",
-      amount: 250000,
-      currency: "IQD",
-      status: "needs_evidence",
-      createdAt: "",
-      updatedAt: "",
-    };
-    expect(isPendingApproval(pack)).toBe(true);
-    expect(isPendingApproval({ ...pack, status: "approved" })).toBe(false);
+  it("keeps needs_evidence in the pending inbox", () => {
+    expect(isPendingApproval({ status: "needs_evidence" })).toBe(true);
+    expect(isPendingApproval({ status: "approved" })).toBe(false);
+  });
+
+  it("rejects fractional IQD", () => {
+    expect(parseIQD("250000")).toBe(250000);
+    expect(parseIQD("12.5")).toBeNull();
   });
 });

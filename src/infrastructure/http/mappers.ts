@@ -20,6 +20,8 @@ import {
   type CafeShift,
   type CafeSLA,
 } from "@/domain/cafe/definition";
+import type { CafeCheckLine, CafeChecklist, CheckKind } from "@/domain/cafe/checklist";
+import { isCheckKind } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverRef } from "@/domain/cafe/handover";
 import type { CafeIntake } from "@/domain/cafe/intake";
 import { isVoiceKind, type CafeQRCode, type CafeVoice, type PublicQR } from "@/domain/cafe/qr";
@@ -197,6 +199,10 @@ export function mapBrief(raw: unknown): BriefView {
       openBreakdowns: num(pulse.openBreakdowns),
       handoverOpen: bool(pulse.handoverOpen),
       intakeWritten: bool(pulse.intakeWritten),
+      openChecks: num(pulse.openChecks),
+      openDone: num(pulse.openDone),
+      closeChecks: num(pulse.closeChecks),
+      closeDone: num(pulse.closeDone),
     },
     cards: cards.map(mapCard),
     sources: sources.map((item) => {
@@ -345,6 +351,8 @@ function mapDashApproval(raw: unknown): DashboardApproval {
     supplier: str(r.supplier),
     amount: num(r.amount),
     currency: str(r.currency, "IQD"),
+    evidence: str(r.evidence) || undefined,
+    version: Math.max(1, Math.trunc(num(r.version, 1))),
     status: str(r.status, "open"),
   };
 }
@@ -385,6 +393,7 @@ export function mapApproval(raw: unknown): SpendApproval {
     amount: num(r.amount),
     currency: str(r.currency, "IQD"),
     evidence: str(r.evidence) || undefined,
+    version: Math.max(1, Math.trunc(num(r.version, 1))),
     status: APPROVAL_STATUSES.has(status as ApprovalStatus) ? (status as ApprovalStatus) : "open",
     createdAt: str(r.createdAt),
     updatedAt: str(r.updatedAt),
@@ -639,5 +648,43 @@ export function mapCafeHandover(raw: unknown): CafeHandover {
     openedAt: str(r.openedAt),
     acceptedAt: str(r.acceptedAt),
     updatedAt: str(r.updatedAt),
+  };
+}
+
+function mapCheckPulse(raw: unknown): { total: number; done: number; remaining: number } {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return { total: num(r.total), done: num(r.done), remaining: num(r.remaining) };
+}
+
+function mapCheckLine(raw: unknown): CafeCheckLine | null {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const kind = str(r.kind);
+  const id = str(r.id);
+  if (!id || !isCheckKind(kind)) return null;
+  return {
+    id,
+    kind: kind as CheckKind,
+    title: str(r.title),
+    sort: num(r.sort),
+    active: r.active !== false,
+    done: bool(r.done),
+    doneAt: str(r.doneAt),
+    doneBy: str(r.doneBy),
+    doneByName: str(r.doneByName),
+  };
+}
+
+export function mapCafeChecklist(raw: unknown): CafeChecklist {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const items = Array.isArray(r.items) ? r.items.map(mapCheckLine).filter((x): x is CafeCheckLine => x !== null) : [];
+  return {
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    items,
+    open: mapCheckPulse(r.open),
+    close: mapCheckPulse(r.close),
+    hasList: bool(r.hasList),
+    canEdit: bool(r.canEdit),
+    canCheck: bool(r.canCheck),
   };
 }

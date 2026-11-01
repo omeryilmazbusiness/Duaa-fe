@@ -11,6 +11,10 @@ export interface BriefPulse {
   openBreakdowns: number;
   handoverOpen: boolean;
   intakeWritten: boolean;
+  openChecks: number;
+  openDone: number;
+  closeChecks: number;
+  closeDone: number;
 }
 
 export interface BriefHeadline {

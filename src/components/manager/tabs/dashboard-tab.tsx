@@ -142,10 +142,19 @@ export function DashboardTab({
     onError: (err: Error) => toast.error(err instanceof ApiError ? err.message : err.message),
   });
 
+  const attachPack = useMutation({
+    mutationFn: (input: { id: string; evidence: string }) => kernel.attachApprovalEvidence(wid, input.id, input.evidence),
+    onSuccess: () => {
+      toast.success(t.attachEvidence);
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err instanceof ApiError ? err.message : err.message),
+  });
+
   const pulse = dash.data?.pulse ?? EMPTY_PULSE;
   const tiles = sourceTiles(dash.data?.tiles ?? []);
   const workload = dash.data?.workload ?? [];
-  const busy = closeTill.isPending || submitPack.isPending || actPack.isPending;
+  const busy = closeTill.isPending || submitPack.isPending || actPack.isPending || attachPack.isPending;
   const kpis = pulseKpis(pulse);
   const quick = dashboardQuickActions(session.tabs, isGm);
 
@@ -215,6 +224,7 @@ export function DashboardTab({
                   busy={busy}
                   onSubmit={(input) => submitPack.mutate(input)}
                   onAct={(id, body) => actPack.mutate({ id, body })}
+                  onAttach={(id, evidence) => attachPack.mutate({ id, evidence })}
                 />
               </div>
             </div>

@@ -11,6 +11,10 @@ const emptyPulse = {
   openBreakdowns: 0,
   handoverOpen: false,
   intakeWritten: false,
+  openChecks: 0,
+  openDone: 0,
+  closeChecks: 0,
+  closeDone: 0,
 };
 
 function brief(over: Partial<BriefView> = {}): BriefView {
@@ -36,10 +40,23 @@ describe("today look", () => {
 
   it("exposes recorded floor files only — empty close is not a fake total", () => {
     const quiet = floorKpis(emptyPulse);
-    expect(quiet.map((item) => item.value)).toEqual([0, 0, 0, 0]);
+    expect(quiet.map((item) => item.value)).toEqual([0, 0, 0, 0, 0]);
     expect(quiet.find((item) => item.id === "handover")?.captionKey).toBe("floorHandoverQuiet");
-    const live = floorKpis({ ...emptyPulse, openRecoveries: 1, lateRecoveries: 1, openBreakdowns: 2, handoverOpen: true, intakeWritten: true });
-    expect(live.map((item) => item.value)).toEqual([1, 2, 1, 1]);
+    expect(quiet.find((item) => item.id === "checks")?.captionKey).toBe("floorChecksQuiet");
+    const live = floorKpis({
+      ...emptyPulse,
+      openRecoveries: 1,
+      lateRecoveries: 1,
+      openBreakdowns: 2,
+      handoverOpen: true,
+      intakeWritten: true,
+      openChecks: 2,
+      openDone: 1,
+      closeChecks: 1,
+      closeDone: 0,
+    });
+    expect(live.map((item) => item.value)).toEqual([1, 2, 1, 1, 2]);
+    expect(live.find((item) => item.id === "checks")?.captionKey).toBe("floorChecksOpen");
     expect(live.find((item) => item.id === "handover")?.captionKey).toBe("floorHandoverOpen");
   });
 

@@ -18,13 +18,19 @@ export interface SpendApproval {
   amount: number;
   currency: string;
   evidence?: string;
+  version: number;
   status: ApprovalStatus;
   createdAt: string;
   updatedAt: string;
 }
 
-export function isPendingApproval(pack: SpendApproval): boolean {
+export function isPendingApproval(pack: { status: string }): boolean {
   return pack.status === "open" || pack.status === "needs_evidence";
+}
+
+/** Approve still does not pay. It only needs an open pack with evidence. */
+export function canApprove(pack: { status: string; evidence?: string }): boolean {
+  return pack.status === "open" && Boolean(pack.evidence?.trim());
 }
 
 /** Whole IQD only. Never parse a float into money. */

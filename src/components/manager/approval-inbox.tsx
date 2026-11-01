@@ -4,7 +4,7 @@ import { Check, FileWarning, Plus, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import { WidgetCard } from "@/components/dashboard/widget-card";
 import type { DashboardApproval } from "@/domain/dashboard/types";
-import { parseIQD, type ApprovalAction } from "@/domain/finance/types";
+import { canApprove, parseIQD, type ApprovalAction } from "@/domain/finance/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatIQD } from "@/lib/format";
@@ -19,6 +19,7 @@ export function ApprovalInbox({
   busy,
   onSubmit,
   onAct,
+  onAttach,
 }: {
   packs: DashboardApproval[];
   canSubmit: boolean;
@@ -26,11 +27,13 @@ export function ApprovalInbox({
   busy: boolean;
   onSubmit: (input: { title: string; supplier: string; amount: number; evidence?: string }) => void;
   onAct: (id: string, input: { action?: ApprovalAction; amount?: number }) => void;
+  onAttach: (id: string, evidence: string) => void;
 }) {
   const { t, locale } = useLocale();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", supplier: "", amount: "", evidence: "" });
   const [revise, setRevise] = useState<Record<string, string>>({});
+  const [proof, setProof] = useState<Record<string, string>>({});
 
   return (
     <WidgetCard
@@ -92,52 +95,83 @@ export function ApprovalInbox({
         </div>
       ) : (
         <ul className="space-y-1">
-          {packs.map((pack) => (
-            <li key={pack.id} className="rounded-[20px] px-2.5 py-2.5 hover:bg-zinc-50/90">
-              <div className="flex items-center gap-3.5">
-                <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", TONE_GRADIENT.violet)}>
-                  <FileWarning className="h-5 w-5" strokeWidth={2} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold tracking-tight text-zinc-900">{pack.title}</p>
-                  <p className="truncate text-[12px] font-medium text-zinc-500">
-                    {pack.supplier || t.pendingApprovals} · {formatIQD(pack.amount, locale)}
-                  </p>
+          {packs.map((pack) => {
+            const nextAmount = parseIQD(revise[pack.id] ?? "");
+            const revising = nextAmount != null && nextAmount > 0 && nextAmount !== pack.amount;
+            const waiting = pack.status === "needs_evidence";
+            return (
+              <li key={pack.id} className="rounded-[20px] px-2.5 py-2.5 hover:bg-zinc-50/90" data-testid={`approval-${pack.id}`}>
+                <div className="flex items-center gap-3.5">
+                  <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", TONE_GRADIENT.violet)}>
+                    <FileWarning className="h-5 w-5" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold tracking-tight text-zinc-900">{pack.title}</p>
+                    <p className="truncate text-[12px] font-medium text-zinc-500">
+                      {pack.supplier || t.pendingApprovals} · {formatIQD(pack.amount, locale)} · {t.approvalVersion} {pack.version}
+                    </p>
+                    <p className={cn("truncate text-[12px] font-medium", waiting ? "text-amber-600" : "text-zinc-400")}>
+                      {waiting ? t.needsEvidenceStatus : pack.evidence ? pack.evidence : t.evidenceRequired}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {canAct ? (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5 ps-[58px]">
-                  <Input
-                    className="h-9 max-w-[140px] rounded-xl"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    placeholder={t.amount}
-                    value={revise[pack.id] ?? ""}
-                    onChange={(e) => setRevise((prev) => ({ ...prev, [pack.id]: e.target.value }))}
-                    aria-label={t.amount}
-                  />
-                  <Button
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => {
-                      const amount = parseIQD(revise[pack.id] ?? "");
-                      onAct(pack.id, amount != null && amount > 0 && amount !== pack.amount ? { amount } : { action: "approve" });
-                    }}
-                    aria-label={t.approve}
-                  >
-                    <Check />
-                    {t.approve}
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => onAct(pack.id, { action: "request_evidence" })}>
-                    {t.requestEvidence}
-                  </Button>
-                  <Button size="icon-sm" variant="ghost" disabled={busy} onClick={() => onAct(pack.id, { action: "reject" })} aria-label={t.reject}>
-                    <X />
-                  </Button>
-                </div>
-              ) : null}
-            </li>
-          ))}
+                {canSubmit && waiting ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 ps-[58px]">
+                    <Input
+                      className="h-9 max-w-[200px] rounded-xl"
+                      placeholder={t.evidence}
+                      value={proof[pack.id] ?? ""}
+                      onChange={(e) => setProof((prev) => ({ ...prev, [pack.id]: e.target.value }))}
+                      aria-label={t.attachEvidence}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy || !(proof[pack.id] ?? "").trim()}
+                      onClick={() => {
+                        const evidence = (proof[pack.id] ?? "").trim();
+                        if (!evidence) return;
+                        onAttach(pack.id, evidence);
+                        setProof((prev) => ({ ...prev, [pack.id]: "" }));
+                      }}
+                    >
+                      {t.attachEvidence}
+                    </Button>
+                  </div>
+                ) : null}
+                {canAct ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 ps-[58px]">
+                    <Input
+                      className="h-9 max-w-[140px] rounded-xl"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder={t.amount}
+                      value={revise[pack.id] ?? ""}
+                      onChange={(e) => setRevise((prev) => ({ ...prev, [pack.id]: e.target.value }))}
+                      aria-label={t.amount}
+                    />
+                    <Button
+                      size="sm"
+                      disabled={busy || (!revising && !canApprove(pack))}
+                      onClick={() => {
+                        onAct(pack.id, revising ? { amount: nextAmount } : { action: "approve" });
+                      }}
+                      aria-label={t.approve}
+                    >
+                      <Check />
+                      {t.approve}
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={busy} onClick={() => onAct(pack.id, { action: "request_evidence" })}>
+                      {t.requestEvidence}
+                    </Button>
+                    <Button size="icon-sm" variant="ghost" disabled={busy} onClick={() => onAct(pack.id, { action: "reject" })} aria-label={t.reject}>
+                      <X />
+                    </Button>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       )}
     </WidgetCard>

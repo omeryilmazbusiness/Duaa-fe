@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardCheck, Handshake, LayoutGrid, ListTodo, MessageSquare, QrCode, Wrench } from "lucide-react";
+import { ClipboardCheck, ClipboardList, Handshake, LayoutGrid, ListTodo, MessageSquare, QrCode, Wrench } from "lucide-react";
+import { CafeChecklistCard } from "@/components/manager/cafe-checklist-card";
 import { CafeHandoverCard } from "@/components/manager/cafe-handover-card";
 import { CafeIntakeCard } from "@/components/manager/cafe-intake-card";
 import { ReportInbox } from "@/components/manager/report-inbox";
@@ -31,13 +32,16 @@ export function FeedbackTab({
   const reports = useQuery({ queryKey: qk.reports(workspaceId), queryFn: () => kernel.listReports(workspaceId), staleTime: 15_000 });
   const handover = useQuery({ queryKey: qk.cafeHandover(workspaceId), queryFn: () => kernel.getCafeHandover(workspaceId), staleTime: 15_000 });
   const intake = useQuery({ queryKey: qk.cafeIntake(workspaceId), queryFn: () => kernel.getCafeIntake(workspaceId), staleTime: 15_000 });
+  const checks = useQuery({ queryKey: qk.cafeChecklist(workspaceId), queryFn: () => kernel.getCafeChecklist(workspaceId), staleTime: 15_000 });
 
-  const pending = voices.isPending || reports.isPending || handover.isPending || intake.isPending;
+  const pending = voices.isPending || reports.isPending || handover.isPending || intake.isPending || checks.isPending;
   const openRecoveries = (voices.data ?? []).filter((v) => v.needsRecovery && v.recoveryStatus !== "closed").length;
   const lateRecoveries = (voices.data ?? []).filter((v) => v.lateAck || v.lateResolve).length;
   const openBreakdowns = (reports.data ?? []).filter((r) => r.kind === "breakage" && r.status !== "resolved").length;
   const handoverOpen = handover.data?.persisted === true && handover.data.status === "open";
   const closeWritten = intake.data?.persisted === true;
+  const checkRemaining = checks.data ? checks.data.open.remaining + checks.data.close.remaining : 0;
+  const checkTotal = checks.data ? checks.data.open.total + checks.data.close.total : 0;
 
   return (
     <div className="space-y-5" data-testid="feedback-board">
@@ -57,7 +61,7 @@ export function FeedbackTab({
         />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" data-testid="feedback-kpis">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4" data-testid="feedback-kpis">
         <StatTile
           label={t.floorRecoveries}
           value={pending ? "—" : openRecoveries}
@@ -83,6 +87,14 @@ export function FeedbackTab({
           icon={ClipboardCheck}
           testId="feedback-kpi-close"
         />
+        <StatTile
+          label={t.floorChecks}
+          value={pending ? "—" : checkRemaining}
+          caption={pending ? undefined : checkTotal === 0 ? t.floorChecksQuiet : checkRemaining === 0 ? t.floorChecksDone : t.floorChecksOpen}
+          tone="indigo"
+          icon={ClipboardList}
+          testId="feedback-kpi-checks"
+        />
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -97,6 +109,9 @@ export function FeedbackTab({
         </WidgetCard>
         <WidgetCard title={t.handoverTitle} icon={Handshake} tone="violet" testId="feedback-handover">
           <CafeHandoverCard workspaceId={workspaceId} />
+        </WidgetCard>
+        <WidgetCard title={t.checkTitle} icon={ClipboardList} tone="indigo" testId="feedback-checklist">
+          <CafeChecklistCard workspaceId={workspaceId} />
         </WidgetCard>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Check, ChevronRight, Globe, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
+import { Briefcase, Check, ChevronRight, ClipboardCheck, Globe, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
 import { displayName, personInitials, type SessionPayload } from "@/domain/session/types";
 import type { SettingsPane } from "@/domain/settings/pane";
 import {
@@ -13,6 +13,7 @@ import {
   IosScreen,
 } from "@/components/ios/ios-settings";
 import { AssistantSettingsCard } from "@/components/assistant/assistant-settings-card";
+import { CafeChecklistDesk } from "@/components/settings/cafe-checklist-desk";
 import { CafeDefinitionCard } from "@/components/settings/cafe-definition-card";
 import { CafeTableQR } from "@/components/settings/cafe-table-qr";
 import { TeamTab } from "@/components/manager/tabs/team-tab";
@@ -188,6 +189,16 @@ function SettingsDetail({
         <IosNavBar backLabel={t.settings} onBack={() => onPane("root")} />
         <DetailHeader icon={Store} tone="amber" title={t.cafeTitle} description={t.cafeHint} />
         <CafeDefinitionCard session={session} />
+        <section className="space-y-3" data-testid="settings-checklist">
+          <header className="flex items-center gap-3">
+            <IosGlyph icon={ClipboardCheck} tone="indigo" />
+            <div>
+              <h2 className="text-[17px] font-semibold text-zinc-950">{t.checkTitle}</h2>
+              <p className="text-[13px] text-zinc-500">{t.checkHint}</p>
+            </div>
+          </header>
+          <CafeChecklistDesk workspaceId={session.workspace.id} />
+        </section>
       </article>
     );
   }

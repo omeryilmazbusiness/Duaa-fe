@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CheckCircle2, ClipboardCheck, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
+import { Banknote, CheckCircle2, ClipboardCheck, ClipboardList, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardCommandBar } from "@/components/dashboard/command-bar";
@@ -31,6 +31,7 @@ const KPI_ICON: Record<string, LucideIcon> = {
   breakdowns: Wrench,
   handover: Handshake,
   close: ClipboardCheck,
+  checks: ClipboardList,
 };
 
 function composeHeadline(t: Messages, brief: BriefView): string {
@@ -80,6 +81,10 @@ export function TodayTab({
     openBreakdowns: 0,
     handoverOpen: false,
     intakeWritten: false,
+    openChecks: 0,
+    openDone: 0,
+    closeChecks: 0,
+    closeDone: 0,
   };
   const kpis = todayKpis(pulse);
   const floor = floorKpis(pulse);
@@ -144,7 +149,7 @@ export function TodayTab({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4" data-testid="today-floor">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4" data-testid="today-floor">
         {floor.map((kpi) => (
           <StatTile
             key={kpi.id}
@@ -219,7 +224,9 @@ export function TodayTab({
                                 ? Wrench
                                 : src.kind === "daily_close"
                                   ? ClipboardCheck
-                                  : TimerOff
+                                  : src.kind === "checklist"
+                                    ? ClipboardList
+                                    : TimerOff
                       }
                       tone={src.status === "live" ? "emerald" : "zinc"}
                       value={src.status === "live" ? t.sourceLive : "—"}

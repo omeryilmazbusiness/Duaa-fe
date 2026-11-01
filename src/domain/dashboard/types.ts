@@ -34,6 +34,8 @@ export interface DashboardApproval {
   supplier: string;
   amount: number;
   currency: string;
+  evidence?: string;
+  version: number;
   status: string;
 }
 

@@ -8,6 +8,7 @@ import type {
   ChatRole,
 } from "@/domain/assistant/types";
 import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
+import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
 import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
@@ -24,6 +25,7 @@ import {
   mapAssistantSettings,
   mapAssistantStatus,
   mapCafeDefinition,
+  mapCafeChecklist,
   mapCafeHandover,
   mapCafeIntake,
   mapCafeQRCode,
@@ -282,6 +284,15 @@ export class HttpKernelApi implements KernelApi {
       .then(mapApproval);
   }
 
+  attachApprovalEvidence(workspaceId: string, approvalId: string, evidence: string): Promise<SpendApproval> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/approvals/${approvalId}/evidence`, {
+        method: "POST",
+        body: JSON.stringify({ evidence }),
+      })
+      .then(mapApproval);
+  }
+
   getAssistantStatus(workspaceId: string): Promise<AssistantStatus> {
     return this.http.request(`/v1/workspaces/${workspaceId}/assistant/status`).then(mapAssistantStatus);
   }
@@ -421,5 +432,28 @@ export class HttpKernelApi implements KernelApi {
         body: "{}",
       })
       .then(mapCafeHandover);
+  }
+
+  getCafeChecklist(workspaceId: string, date?: string): Promise<CafeChecklist> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/checklist${q}`).then(mapCafeChecklist);
+  }
+
+  saveCafeChecklist(workspaceId: string, items: CafeCheckDraft[]): Promise<CafeChecklist> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/checklist`, {
+        method: "PUT",
+        body: JSON.stringify({ items }),
+      })
+      .then(mapCafeChecklist);
+  }
+
+  toggleCafeChecklist(workspaceId: string, input: { businessDate?: string; itemId: string }): Promise<CafeChecklist> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/checklist/toggle`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapCafeChecklist);
   }
 }

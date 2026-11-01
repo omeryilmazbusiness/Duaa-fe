@@ -16,14 +16,14 @@ export const TODAY_KPIS: readonly TodayKpiSpec[] = [
   { id: "done", tone: "emerald", valueKey: "completedToday", labelKey: "completedToday" },
 ];
 
-export type FloorKpiId = "recoveries" | "breakdowns" | "handover" | "close";
+export type FloorKpiId = "recoveries" | "breakdowns" | "handover" | "close" | "checks";
 
 export interface FloorKpi {
   id: FloorKpiId;
   tone: Tone;
   value: number;
-  labelKey: "floorRecoveries" | "floorBreakdowns" | "floorHandover" | "floorClose";
-  captionKey: "floorLate" | "floorHandoverOpen" | "floorHandoverQuiet" | "floorCloseWritten" | "floorCloseOpen" | null;
+  labelKey: "floorRecoveries" | "floorBreakdowns" | "floorHandover" | "floorClose" | "floorChecks";
+  captionKey: "floorLate" | "floorHandoverOpen" | "floorHandoverQuiet" | "floorCloseWritten" | "floorCloseOpen" | "floorChecksQuiet" | "floorChecksOpen" | "floorChecksDone" | null;
 }
 
 export type HeadlinePartKey =
@@ -57,7 +57,8 @@ export type SourceCopyKey =
   | "sourceCash"
   | "sourceHandover"
   | "sourceBreakdown"
-  | "sourceDailyClose";
+  | "sourceDailyClose"
+  | "sourceChecklist";
 
 export function todayKpis(pulse: BriefView["pulse"]): Array<TodayKpiSpec & { value: number }> {
   return TODAY_KPIS.map((spec) => ({ ...spec, value: pulse[spec.valueKey] }));
@@ -92,6 +93,18 @@ export function floorKpis(pulse: BriefView["pulse"]): FloorKpi[] {
       value: pulse.intakeWritten ? 1 : 0,
       labelKey: "floorClose",
       captionKey: pulse.intakeWritten ? "floorCloseWritten" : "floorCloseOpen",
+    },
+    {
+      id: "checks",
+      tone: "indigo",
+      value: (pulse.openChecks || 0) + (pulse.closeChecks || 0) === 0 ? 0 : (pulse.openChecks - pulse.openDone) + (pulse.closeChecks - pulse.closeDone),
+      labelKey: "floorChecks",
+      captionKey:
+        (pulse.openChecks || 0) + (pulse.closeChecks || 0) === 0
+          ? "floorChecksQuiet"
+          : (pulse.openChecks - pulse.openDone) + (pulse.closeChecks - pulse.closeDone) === 0
+            ? "floorChecksDone"
+            : "floorChecksOpen",
     },
   ];
 }
@@ -183,6 +196,8 @@ export function sourceCopyKey(kind: string): SourceCopyKey | null {
       return "sourceBreakdown";
     case "daily_close":
       return "sourceDailyClose";
+    case "checklist":
+      return "sourceChecklist";
     default:
       return null;
   }

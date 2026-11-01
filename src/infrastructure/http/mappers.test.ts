@@ -114,12 +114,14 @@ describe("api mappers", () => {
         { module: "cash", status: "live", value: -2000, labelKey: "sourceCash" },
       ],
       cash: { status: "live", businessDate: "2026-10-30", countedAmount: 98000, expectedAmount: 100000, variance: -2000 },
-      approvals: [{ id: "a1", title: "Milk invoice", supplier: "Al-Nahrain", amount: 250000, currency: "IQD", status: "open" }],
+      approvals: [{ id: "a1", title: "Milk invoice", supplier: "Al-Nahrain", amount: 250000, currency: "IQD", evidence: "photo", version: 2, status: "needs_evidence" }],
       workload: [],
     });
     expect(dash.tiles.find((tile) => tile.module === "sales")?.status).toBe("unavailable");
     expect(dash.cash?.status).toBe("live");
     expect(dash.cash?.variance).toBe(-2000);
     expect(dash.approvals?.[0]?.amount).toBe(250000);
+    expect(dash.approvals?.[0]?.version).toBe(2);
+    expect(dash.approvals?.[0]?.evidence).toBe("photo");
   });
 });
