@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { IconWell } from "@/components/manager/white-card";
 import { cardDisplayValue, cardIconKey, cardTitleKey, cardTone, sourceCopyKey } from "@/domain/executive/look";
 import type { BriefCard, DecisionAction } from "@/domain/executive";
 import type { ManagerTab } from "@/domain/catalog";
@@ -25,7 +26,7 @@ import { formatIQD } from "@/lib/format";
 import { EXPAND_SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
-import { TONE_GRADIENT, TONE_SOFT } from "@/theme/tones";
+import { TONE_FILL } from "@/theme/tones";
 
 const KIND_ICON = {
   late_staff: TimerOff,
@@ -35,6 +36,9 @@ const KIND_ICON = {
   handover: Handshake,
   breakdown: Wrench,
 } as const;
+
+const GLASS_ICON =
+  "bg-white/15 text-white hover:bg-white/25 hover:text-white focus-visible:ring-white/40";
 
 export function DecisionCard({
   card,
@@ -68,7 +72,10 @@ export function DecisionCard({
   const urgent = card.severity === "high" || card.kind === "late_staff";
 
   return (
-    <article className="rounded-[20px] px-2.5 py-2.5 transition-colors hover:bg-zinc-50/90" data-testid={`today-card-${card.kind}`}>
+    <article
+      className={cn("ios-fill-sheen rounded-[24px] p-3.5 transition-transform duration-200 hover:-translate-y-px", TONE_FILL[tone])}
+      data-testid={`today-card-${card.kind}`}
+    >
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -77,32 +84,34 @@ export function DecisionCard({
           aria-label={expanded ? t.collapseCard : t.expandCard}
           onClick={() => setExpanded((open) => !open)}
         >
-          <span className={cn("relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-[0_6px_12px_-6px_rgba(15,23,42,0.28)]", TONE_GRADIENT[tone])}>
-            <Icon className="h-5 w-5" strokeWidth={2.1} />
-            {urgent ? <span className="absolute -end-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-rose-500" aria-hidden /> : null}
+          <span className="relative shrink-0">
+            <IconWell icon={Icon} size="lg" />
+            {urgent ? <span className="absolute -end-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white/80 bg-white" aria-hidden /> : null}
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-2">
-              <span className="truncate text-[14px] font-semibold tracking-tight text-zinc-900">{title}</span>
-              {urgent ? <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold", TONE_SOFT.rose)}>{t.overdue}</span> : null}
+              <span className="truncate text-[14px] font-semibold tracking-tight text-white">{title}</span>
+              {urgent ? (
+                <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-[10.5px] font-semibold text-white">{t.overdue}</span>
+              ) : null}
             </span>
-            <span className="block truncate text-[12px] font-medium text-zinc-500">
+            <span className="block truncate text-[12px] font-medium text-white/75">
               {kindLabel}
               {assignee ? ` · ${memberDisplayName(assignee)}` : ""}
             </span>
           </span>
           <span className="shrink-0 text-end">
-            <span className="block text-[15px] font-semibold tabular-nums tracking-tight text-zinc-950">{display}</span>
+            <span className="block text-[15px] font-semibold tabular-nums tracking-tight text-white">{display}</span>
             {assignee ? (
-              <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-[10px] font-semibold text-zinc-700">
+              <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-[10px] font-semibold text-white">
                 {memberInitials(assignee)}
               </span>
             ) : null}
           </span>
           {expanded ? (
-            <ChevronUp className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
+            <ChevronUp className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
           ) : (
-            <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
+            <ChevronDown className="h-4 w-4 shrink-0 text-white/70" aria-hidden />
           )}
         </button>
         <div className="flex shrink-0 items-center gap-1">
@@ -110,6 +119,7 @@ export function DecisionCard({
             type="button"
             variant="ghost"
             size="icon-sm"
+            className={GLASS_ICON}
             disabled={busy}
             aria-label={t.goToTab}
             onClick={() => {
@@ -124,6 +134,7 @@ export function DecisionCard({
               type="button"
               variant="ghost"
               size="icon-sm"
+              className={GLASS_ICON}
               disabled={busy}
               aria-label={t.assignTask}
               onClick={() => {
@@ -136,7 +147,15 @@ export function DecisionCard({
             </Button>
           ) : null}
           {card.allowedActions.includes("resolve") ? (
-            <Button type="button" variant="ghost" size="icon-sm" disabled={busy} aria-label={t.markDone} onClick={() => onAct("resolve")}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className={GLASS_ICON}
+              disabled={busy}
+              aria-label={t.markDone}
+              onClick={() => onAct("resolve")}
+            >
               <Check />
             </Button>
           ) : null}
@@ -152,20 +171,20 @@ export function DecisionCard({
             exit={{ height: 0, opacity: 0 }}
             transition={EXPAND_SPRING}
           >
-            <div className="ms-[58px] mt-2 space-y-2 rounded-[16px] bg-zinc-50/80 px-3.5 py-3">
-              {detail ? <p className="text-[13px] text-zinc-600">{detail}</p> : null}
+            <div className="mt-3 space-y-2 rounded-[16px] bg-white/12 px-3.5 py-3">
+              {detail ? <p className="text-[13px] text-white/85">{detail}</p> : null}
               {items.length > 0 ? (
                 <ul className="space-y-1.5">
                   {items.map((item) => (
-                    <li key={item.id} className="text-[13px] leading-snug text-zinc-800">
+                    <li key={item.id} className="text-[13px] leading-snug text-white">
                       <span className="font-medium">{item.title}</span>
-                      {item.meta ? <span className="mt-0.5 block text-[11px] font-medium text-zinc-500">{item.meta}</span> : null}
+                      {item.meta ? <span className="mt-0.5 block text-[11px] font-medium text-white/70">{item.meta}</span> : null}
                     </li>
                   ))}
                 </ul>
               ) : null}
               {assignee ? (
-                <p className="text-[13px] text-zinc-600">
+                <p className="text-[13px] text-white/85">
                   {t.assigned}: {memberDisplayName(assignee)}
                 </p>
               ) : null}
@@ -180,7 +199,7 @@ export function DecisionCard({
                   }}
                 >
                   <select
-                    className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-2 text-sm text-zinc-900 outline-none"
+                    className="h-10 min-w-0 flex-1 rounded-xl border border-white/25 bg-white/95 px-2 text-sm text-zinc-900 outline-none"
                     value={assigneeUserId}
                     onChange={(e) => setAssigneeUserId(e.target.value)}
                     required
@@ -193,10 +212,16 @@ export function DecisionCard({
                       </option>
                     ))}
                   </select>
-                  <Button type="submit" size="icon-sm" disabled={busy || !assigneeUserId} aria-label={t.assignTask}>
+                  <Button
+                    type="submit"
+                    size="icon-sm"
+                    className="bg-white text-zinc-900 hover:bg-white/90"
+                    disabled={busy || !assigneeUserId}
+                    aria-label={t.assignTask}
+                  >
                     <Check />
                   </Button>
-                  <Button type="button" variant="ghost" size="icon-sm" onClick={() => setAssignOpen(false)} aria-label={t.cancel}>
+                  <Button type="button" variant="ghost" size="icon-sm" className={GLASS_ICON} onClick={() => setAssignOpen(false)} aria-label={t.cancel}>
                     <X />
                   </Button>
                 </form>

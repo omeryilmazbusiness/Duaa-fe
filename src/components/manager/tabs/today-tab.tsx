@@ -182,7 +182,7 @@ export function TodayTab({
                 <p className="text-[15px] font-semibold text-zinc-900">{t[emptyBriefKey(brief.data!)]}</p>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-2.5">
                 {cards.map((card) => (
                   <DecisionCard
                     key={card.sourceKey}
