@@ -29,19 +29,22 @@ describe("dashboard look", () => {
     expect(pulseKpis(pulse).map((item) => item.value)).toEqual([4, 7, 2, 1]);
   });
 
-  it("drops the pulse module from source tiles and never treats POS as live", () => {
+  it("drops the pulse module from source tiles and keeps empty POS unavailable", () => {
     const tiles: DashboardTile[] = [
       { module: "pulse", status: "live", value: 0, labelKey: "overdue" },
       { module: "sales", status: "unavailable", reasonKey: "dash.posNotWired", value: 0, labelKey: "sales" },
       { module: "cash", status: "live", value: -2000, labelKey: "sourceCash" },
+      { module: "waste", status: "unavailable", reasonKey: "dash.wasteNotWired", value: 0, labelKey: "waste" },
     ];
     const sources = sourceTiles(tiles);
-    expect(sources.map((tile) => tile.module)).toEqual(["sales", "cash"]);
-    expect(isBoundSource(sources[0]!)).toBe(true);
+    expect(sources.map((tile) => tile.module)).toEqual(["sales", "cash", "waste"]);
+    expect(isBoundSource(sources[0]!)).toBe(false);
+    expect(isBoundSource(sources[2]!)).toBe(true);
     expect(isLiveTile(sources[0]!)).toBe(false);
     expect(tileTone(sources[0]!)).toBe("zinc");
     expect(tileTone(sources[1]!)).toBe("rose");
     expect(reasonCopyKey(sources[0]!.reasonKey)).toBe("posNotWired");
+    expect(isLiveTile({ module: "sales", status: "live", value: 9000, labelKey: "sales" })).toBe(true);
     expect(tileCopyKey("sourceCash")).toBe("sourceCash");
     expect(tileIconKey("occupancy")).toBe("occupancy");
     expect(tileIconKey("unknown")).toBe("reports");

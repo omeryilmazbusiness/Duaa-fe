@@ -25,6 +25,7 @@ import { StatTile } from "@/components/dashboard/stat-tile";
 import { WidgetCard } from "@/components/dashboard/widget-card";
 import { ApprovalInbox } from "@/components/manager/approval-inbox";
 import { CashPanel } from "@/components/manager/cash-panel";
+import { POSPanel } from "@/components/manager/pos-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ManagerTab } from "@/domain/catalog";
 import {
@@ -101,6 +102,7 @@ export function DashboardTab({
   const qc = useQueryClient();
   const wid = session.workspace.id;
   const canClose = allows(session.scope, "cash.close");
+  const canRecordPOS = allows(session.scope, "pos.record");
   const canSubmit = allows(session.scope, "approval.submit");
   const canAct = allows(session.scope, "approval.act");
   const seeMoney = allows(session.scope, "finance.view");
@@ -142,6 +144,25 @@ export function DashboardTab({
     onError: (err: Error) => toast.error(err instanceof ApiError ? err.message : err.message),
   });
 
+  const recordPOS = useMutation({
+    mutationFn: (input: { externalRef: string; kind: "sale" | "return"; tender: "cash" | "card" | "other"; lines: number; gross: number; discount?: number }) =>
+      kernel.recordCafePOS(wid, input),
+    onSuccess: () => {
+      toast.success(t.posRecord);
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err instanceof ApiError ? err.message : err.message),
+  });
+
+  const closePOS = useMutation({
+    mutationFn: () => kernel.closeCafePOS(wid),
+    onSuccess: () => {
+      toast.success(t.posCloseDay);
+      invalidate();
+    },
+    onError: (err: Error) => toast.error(err instanceof ApiError ? err.message : err.message),
+  });
+
   const attachPack = useMutation({
     mutationFn: (input: { id: string; evidence: string }) => kernel.attachApprovalEvidence(wid, input.id, input.evidence),
     onSuccess: () => {
@@ -154,7 +175,7 @@ export function DashboardTab({
   const pulse = dash.data?.pulse ?? EMPTY_PULSE;
   const tiles = sourceTiles(dash.data?.tiles ?? []);
   const workload = dash.data?.workload ?? [];
-  const busy = closeTill.isPending || submitPack.isPending || actPack.isPending || attachPack.isPending;
+  const busy = closeTill.isPending || submitPack.isPending || actPack.isPending || attachPack.isPending || recordPOS.isPending || closePOS.isPending;
   const kpis = pulseKpis(pulse);
   const quick = dashboardQuickActions(session.tabs, isGm);
 
@@ -225,6 +246,15 @@ export function DashboardTab({
                   onSubmit={(input) => submitPack.mutate(input)}
                   onAct={(id, body) => actPack.mutate({ id, body })}
                   onAttach={(id, evidence) => attachPack.mutate({ id, evidence })}
+                />
+              </div>
+              <div className="lg:col-span-3">
+                <POSPanel
+                  sales={dash.data?.sales}
+                  canRecord={canRecordPOS}
+                  busy={busy}
+                  onRecord={(input) => recordPOS.mutate(input)}
+                  onClose={() => closePOS.mutate()}
                 />
               </div>
             </div>

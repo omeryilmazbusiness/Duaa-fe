@@ -18,6 +18,25 @@ export interface DashboardPulse {
   pendingApprovals: number;
 }
 
+export interface DashboardSales {
+  status: TileStatus;
+  reasonKey?: string;
+  businessDate: string;
+  ticketCount: number;
+  saleCount: number;
+  returnCount: number;
+  gross: number;
+  discount: number;
+  returns: number;
+  net: number;
+  basket: number;
+  cash: number;
+  card: number;
+  other: number;
+  closed: boolean;
+  closedAt?: string;
+}
+
 export interface DashboardCash {
   status: TileStatus;
   reasonKey?: string;
@@ -54,6 +73,7 @@ export interface DashboardView {
   pulse: DashboardPulse;
   tiles: DashboardTile[];
   cash?: DashboardCash;
+  sales?: DashboardSales;
   approvals?: DashboardApproval[];
   workload: WorkloadRow[];
 }
@@ -62,7 +82,7 @@ export function isLiveTile(tile: DashboardTile): boolean {
   return tile.status === "live";
 }
 
-/** POS/waste/occupancy tiles must stay missing until a real adapter exists. */
+/** Waste and occupancy stay missing until their adapters exist. Sales go live only from recorded tickets. */
 export function isBoundSource(tile: DashboardTile): boolean {
-  return tile.module === "sales" || tile.module === "waste" || tile.module === "occupancy";
+  return tile.module === "waste" || tile.module === "occupancy";
 }

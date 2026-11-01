@@ -21,6 +21,7 @@ import {
   type CafeSLA,
 } from "@/domain/cafe/definition";
 import type { CafeCheckLine, CafeChecklist, CheckKind } from "@/domain/cafe/checklist";
+import type { POSDay, POSTender, POSTicket, POSTicketKind } from "@/domain/cafe/pos";
 import { isCheckKind } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverRef } from "@/domain/cafe/handover";
 import type { CafeIntake } from "@/domain/cafe/intake";
@@ -29,6 +30,7 @@ import type {
   DashboardApproval,
   DashboardCash,
   DashboardPulse,
+  DashboardSales,
   DashboardTile,
   DashboardView,
   TileStatus,
@@ -315,6 +317,7 @@ export function mapDashboard(raw: unknown): DashboardView {
     } satisfies DashboardPulse,
     tiles: mapList(r.tiles, mapTile),
     cash: cashRaw ? mapCash(cashRaw) : undefined,
+    sales: r.sales && typeof r.sales === "object" ? mapDashSales(r.sales as Record<string, unknown>) : undefined,
     approvals: Array.isArray(r.approvals) ? r.approvals.map(mapDashApproval) : undefined,
     workload: mapList(r.workload, mapWorkload),
   };
@@ -328,6 +331,27 @@ function mapTile(raw: unknown): DashboardTile {
     reasonKey: str(r.reasonKey) || undefined,
     value: num(r.value),
     labelKey: str(r.labelKey),
+  };
+}
+
+function mapDashSales(r: Record<string, unknown>): DashboardSales {
+  return {
+    status: asTileStatus(r.status),
+    reasonKey: str(r.reasonKey) || undefined,
+    businessDate: str(r.businessDate),
+    ticketCount: num(r.ticketCount),
+    saleCount: num(r.saleCount),
+    returnCount: num(r.returnCount),
+    gross: num(r.gross),
+    discount: num(r.discount),
+    returns: num(r.returns),
+    net: num(r.net),
+    basket: num(r.basket),
+    cash: num(r.cash),
+    card: num(r.card),
+    other: num(r.other),
+    closed: bool(r.closed),
+    closedAt: str(r.closedAt) || undefined,
   };
 }
 
@@ -686,5 +710,54 @@ export function mapCafeChecklist(raw: unknown): CafeChecklist {
     hasList: bool(r.hasList),
     canEdit: bool(r.canEdit),
     canCheck: bool(r.canCheck),
+  };
+}
+
+const POS_KINDS = new Set<POSTicketKind>(["sale", "return"]);
+const POS_TENDERS = new Set<POSTender>(["cash", "card", "other"]);
+
+function mapPOSTicket(raw: unknown): POSTicket | null {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const kind = str(r.kind);
+  const tender = str(r.tender);
+  const id = str(r.id);
+  if (!id || !POS_KINDS.has(kind as POSTicketKind) || !POS_TENDERS.has(tender as POSTender)) return null;
+  return {
+    id,
+    externalRef: str(r.externalRef),
+    businessDate: str(r.businessDate),
+    kind: kind as POSTicketKind,
+    lines: num(r.lines),
+    gross: num(r.gross),
+    discount: num(r.discount),
+    net: num(r.net),
+    tender: tender as POSTender,
+    recordedAt: str(r.recordedAt),
+  };
+}
+
+export function mapPOSDay(raw: unknown): POSDay {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const tickets = Array.isArray(r.tickets) ? r.tickets.map(mapPOSTicket).filter((x): x is POSTicket => x !== null) : [];
+  return {
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    status: r.status === "live" ? "live" : "unavailable",
+    reasonKey: str(r.reasonKey) || undefined,
+    ticketCount: num(r.ticketCount),
+    saleCount: num(r.saleCount),
+    returnCount: num(r.returnCount),
+    gross: num(r.gross),
+    discount: num(r.discount),
+    returns: num(r.returns),
+    net: num(r.net),
+    basket: num(r.basket),
+    cash: num(r.cash),
+    card: num(r.card),
+    other: num(r.other),
+    closed: bool(r.closed),
+    closedAt: str(r.closedAt) || undefined,
+    tickets,
+    canRecord: bool(r.canRecord),
   };
 }
