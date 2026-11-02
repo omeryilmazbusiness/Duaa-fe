@@ -22,6 +22,7 @@ import {
 } from "@/domain/cafe/definition";
 import type { CafeCheckLine, CafeChecklist, CheckKind } from "@/domain/cafe/checklist";
 import type { POSDay, POSTender, POSTicket, POSTicketKind } from "@/domain/cafe/pos";
+import type { PrepDay, PrepStation, PrepStatus, PrepTicket } from "@/domain/cafe/prep";
 import { isCheckKind } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverRef } from "@/domain/cafe/handover";
 import type { CafeIntake } from "@/domain/cafe/intake";
@@ -205,6 +206,9 @@ export function mapBrief(raw: unknown): BriefView {
       openDone: num(pulse.openDone),
       closeChecks: num(pulse.closeChecks),
       closeDone: num(pulse.closeDone),
+      waitingPrep: num(pulse.waitingPrep),
+      readyPrep: num(pulse.readyPrep),
+      servedPrep: num(pulse.servedPrep),
     },
     cards: cards.map(mapCard),
     sources: sources.map((item) => {
@@ -757,6 +761,48 @@ export function mapPOSDay(raw: unknown): POSDay {
     other: num(r.other),
     closed: bool(r.closed),
     closedAt: str(r.closedAt) || undefined,
+    tickets,
+    canRecord: bool(r.canRecord),
+  };
+}
+
+const PREP_STATIONS = new Set<PrepStation>(["kitchen", "bar"]);
+const PREP_STATUSES = new Set<PrepStatus>(["waiting", "ready", "served"]);
+
+function mapPrepTicket(raw: unknown): PrepTicket | null {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const station = str(r.station);
+  const status = str(r.status);
+  const id = str(r.id);
+  if (!id || !PREP_STATIONS.has(station as PrepStation) || !PREP_STATUSES.has(status as PrepStatus)) return null;
+  return {
+    id,
+    ticketRef: str(r.ticketRef),
+    tableLabel: str(r.tableLabel) || undefined,
+    station: station as PrepStation,
+    status: status as PrepStatus,
+    waitMinutes: num(r.waitMinutes),
+    openMinutes: num(r.openMinutes),
+    receivedAt: str(r.receivedAt),
+    readyAt: str(r.readyAt) || undefined,
+    servedAt: str(r.servedAt) || undefined,
+    businessDate: str(r.businessDate),
+  };
+}
+
+export function mapPrepDay(raw: unknown): PrepDay {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const tickets = Array.isArray(r.tickets) ? r.tickets.map(mapPrepTicket).filter((x): x is PrepTicket => x !== null) : [];
+  return {
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    status: r.status === "live" ? "live" : "unavailable",
+    reasonKey: str(r.reasonKey) || undefined,
+    ticketCount: num(r.ticketCount),
+    waitingCount: num(r.waitingCount),
+    readyCount: num(r.readyCount),
+    servedCount: num(r.servedCount),
+    longestOpenMinutes: num(r.longestOpenMinutes),
     tickets,
     canRecord: bool(r.canRecord),
   };

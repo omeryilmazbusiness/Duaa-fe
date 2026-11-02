@@ -1,13 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CheckCircle2, ClipboardCheck, ClipboardList, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
+import { Banknote, CheckCircle2, ClipboardCheck, ClipboardList, Clock3, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardCommandBar } from "@/components/dashboard/command-bar";
 import { MetricTile } from "@/components/dashboard/metric-tile";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { WidgetCard } from "@/components/dashboard/widget-card";
+import { CafePrepCard } from "@/components/manager/cafe-prep-card";
 import { DecisionCard } from "@/components/manager/decision-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ManagerTab } from "@/domain/catalog";
@@ -32,6 +33,7 @@ const KPI_ICON: Record<string, LucideIcon> = {
   handover: Handshake,
   close: ClipboardCheck,
   checks: ClipboardList,
+  prep: Clock3,
 };
 
 function composeHeadline(t: Messages, brief: BriefView): string {
@@ -85,6 +87,9 @@ export function TodayTab({
     openDone: 0,
     closeChecks: 0,
     closeDone: 0,
+    waitingPrep: 0,
+    readyPrep: 0,
+    servedPrep: 0,
   };
   const kpis = todayKpis(pulse);
   const floor = floorKpis(pulse);
@@ -149,7 +154,7 @@ export function TodayTab({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4" data-testid="today-floor">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6 lg:gap-4" data-testid="today-floor">
         {floor.map((kpi) => (
           <StatTile
             key={kpi.id}
@@ -158,11 +163,13 @@ export function TodayTab({
             caption={kpi.captionKey ? t[kpi.captionKey] : undefined}
             tone={kpi.tone}
             icon={KPI_ICON[kpi.id] ?? ListTodo}
-            onClick={session.tabs.includes("feedback") ? () => onOpenTab("feedback") : undefined}
+            onClick={kpi.id === "prep" ? undefined : session.tabs.includes("feedback") ? () => onOpenTab("feedback") : undefined}
             testId={`today-floor-${kpi.id}`}
           />
         ))}
       </div>
+
+      <CafePrepCard session={session} />
 
       {brief.isLoading ? (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -226,7 +233,9 @@ export function TodayTab({
                                   ? ClipboardCheck
                                   : src.kind === "checklist"
                                     ? ClipboardList
-                                    : TimerOff
+                                    : src.kind === "prep_time"
+                                      ? Clock3
+                                      : TimerOff
                       }
                       tone={src.status === "live" ? "emerald" : "zinc"}
                       value={src.status === "live" ? t.sourceLive : "—"}

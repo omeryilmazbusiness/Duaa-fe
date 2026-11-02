@@ -15,6 +15,9 @@ const emptyPulse = {
   openDone: 0,
   closeChecks: 0,
   closeDone: 0,
+  waitingPrep: 0,
+  readyPrep: 0,
+  servedPrep: 0,
 };
 
 function brief(over: Partial<BriefView> = {}): BriefView {
@@ -40,7 +43,7 @@ describe("today look", () => {
 
   it("exposes recorded floor files only — empty close is not a fake total", () => {
     const quiet = floorKpis(emptyPulse);
-    expect(quiet.map((item) => item.value)).toEqual([0, 0, 0, 0, 0]);
+    expect(quiet.map((item) => item.value)).toEqual([0, 0, 0, 0, 0, 0]);
     expect(quiet.find((item) => item.id === "handover")?.captionKey).toBe("floorHandoverQuiet");
     expect(quiet.find((item) => item.id === "checks")?.captionKey).toBe("floorChecksQuiet");
     const live = floorKpis({
@@ -54,8 +57,11 @@ describe("today look", () => {
       openDone: 1,
       closeChecks: 1,
       closeDone: 0,
+      waitingPrep: 1,
+      readyPrep: 0,
+      servedPrep: 0,
     });
-    expect(live.map((item) => item.value)).toEqual([1, 2, 1, 1, 2]);
+    expect(live.map((item) => item.value)).toEqual([1, 2, 1, 1, 2, 1]);
     expect(live.find((item) => item.id === "checks")?.captionKey).toBe("floorChecksOpen");
     expect(live.find((item) => item.id === "handover")?.captionKey).toBe("floorHandoverOpen");
   });
@@ -91,6 +97,9 @@ describe("today look", () => {
     expect(cardTitleKey("brief.handover")).toBe("floorHandover");
     expect(sourceCopyKey("cash_variance")).toBe("sourceCash");
     expect(sourceCopyKey("handover")).toBe("sourceHandover");
+    expect(sourceCopyKey("prep_time")).toBe("sourcePrep");
+    expect(cardTitleKey("brief.prepWaiting")).toBe("prepWaiting");
+    expect(cardTone("prep_time")).toBe("amber");
     expect(cardDisplayValue({ kind: "cash_variance", detail: "-2000", count: 1 } as never)).toEqual({ kind: "cash", value: -2000 });
     expect(cardDisplayValue({ kind: "late_staff", count: 4 } as never)).toEqual({ kind: "count", value: 4 });
   });

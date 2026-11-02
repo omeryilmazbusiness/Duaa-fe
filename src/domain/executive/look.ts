@@ -16,14 +16,14 @@ export const TODAY_KPIS: readonly TodayKpiSpec[] = [
   { id: "done", tone: "emerald", valueKey: "completedToday", labelKey: "completedToday" },
 ];
 
-export type FloorKpiId = "recoveries" | "breakdowns" | "handover" | "close" | "checks";
+export type FloorKpiId = "recoveries" | "breakdowns" | "handover" | "close" | "checks" | "prep";
 
 export interface FloorKpi {
   id: FloorKpiId;
   tone: Tone;
   value: number;
-  labelKey: "floorRecoveries" | "floorBreakdowns" | "floorHandover" | "floorClose" | "floorChecks";
-  captionKey: "floorLate" | "floorHandoverOpen" | "floorHandoverQuiet" | "floorCloseWritten" | "floorCloseOpen" | "floorChecksQuiet" | "floorChecksOpen" | "floorChecksDone" | null;
+  labelKey: "floorRecoveries" | "floorBreakdowns" | "floorHandover" | "floorClose" | "floorChecks" | "floorPrep";
+  captionKey: "floorLate" | "floorHandoverOpen" | "floorHandoverQuiet" | "floorCloseWritten" | "floorCloseOpen" | "floorChecksQuiet" | "floorChecksOpen" | "floorChecksDone" | "floorPrepQuiet" | "floorPrepOpen" | "floorPrepDone" | null;
 }
 
 export type HeadlinePartKey =
@@ -40,7 +40,7 @@ export interface HeadlinePart {
   n: number;
 }
 
-export type CardIconKey = "late_staff" | "customer_voice" | "reservations" | "cash_variance" | "handover" | "breakdown";
+export type CardIconKey = "late_staff" | "customer_voice" | "reservations" | "cash_variance" | "handover" | "breakdown" | "prep_time";
 
 export type CardTitleKey =
   | "overdueTasks"
@@ -48,7 +48,8 @@ export type CardTitleKey =
   | "allClear"
   | "cashVariance"
   | "floorHandover"
-  | "floorBreakdowns";
+  | "floorBreakdowns"
+  | "prepWaiting";
 
 export type SourceCopyKey =
   | "sourceLateStaff"
@@ -58,7 +59,8 @@ export type SourceCopyKey =
   | "sourceHandover"
   | "sourceBreakdown"
   | "sourceDailyClose"
-  | "sourceChecklist";
+  | "sourceChecklist"
+  | "sourcePrep";
 
 export function todayKpis(pulse: BriefView["pulse"]): Array<TodayKpiSpec & { value: number }> {
   return TODAY_KPIS.map((spec) => ({ ...spec, value: pulse[spec.valueKey] }));
@@ -106,6 +108,18 @@ export function floorKpis(pulse: BriefView["pulse"]): FloorKpi[] {
             ? "floorChecksDone"
             : "floorChecksOpen",
     },
+    {
+      id: "prep",
+      tone: (pulse.waitingPrep || 0) > 0 ? "amber" : "teal",
+      value: (pulse.waitingPrep || 0) + (pulse.readyPrep || 0),
+      labelKey: "floorPrep",
+      captionKey:
+        (pulse.waitingPrep || 0) + (pulse.readyPrep || 0) + (pulse.servedPrep || 0) === 0
+          ? "floorPrepQuiet"
+          : (pulse.waitingPrep || 0) + (pulse.readyPrep || 0) === 0
+            ? "floorPrepDone"
+            : "floorPrepOpen",
+    },
   ];
 }
 
@@ -141,6 +155,7 @@ export function cardTone(kind: string): Tone {
     case "handover":
       return "violet";
     case "cash_variance":
+    case "prep_time":
       return "amber";
     default:
       return "zinc";
@@ -154,7 +169,8 @@ export function cardIconKey(kind: string): CardIconKey {
     kind === "reservations" ||
     kind === "cash_variance" ||
     kind === "handover" ||
-    kind === "breakdown"
+    kind === "breakdown" ||
+    kind === "prep_time"
   ) {
     return kind;
   }
@@ -175,6 +191,8 @@ export function cardTitleKey(titleKey: string): CardTitleKey | null {
       return "floorHandover";
     case "brief.breakdowns":
       return "floorBreakdowns";
+    case "brief.prepWaiting":
+      return "prepWaiting";
     default:
       return null;
   }
@@ -198,6 +216,8 @@ export function sourceCopyKey(kind: string): SourceCopyKey | null {
       return "sourceDailyClose";
     case "checklist":
       return "sourceChecklist";
+    case "prep_time":
+      return "sourcePrep";
     default:
       return null;
   }

@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Clock3,
   Handshake,
   MessageCircle,
   TimerOff,
@@ -35,6 +36,7 @@ const KIND_ICON = {
   cash_variance: Banknote,
   handover: Handshake,
   breakdown: Wrench,
+  prep_time: Clock3,
 } as const;
 
 const GLASS_ICON =

@@ -10,6 +10,7 @@ import type {
 import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
 import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
 import type { POSDay, POSTicketDraft } from "@/domain/cafe/pos";
+import type { PrepDay, PrepTicketDraft } from "@/domain/cafe/prep";
 import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
 import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
@@ -28,6 +29,7 @@ import {
   mapCafeDefinition,
   mapCafeChecklist,
   mapPOSDay,
+  mapPrepDay,
   mapCafeHandover,
   mapCafeIntake,
   mapCafeQRCode,
@@ -480,5 +482,31 @@ export class HttpKernelApi implements KernelApi {
         body: JSON.stringify({ businessDate }),
       })
       .then(mapPOSDay);
+  }
+
+  getCafePrep(workspaceId: string, date?: string): Promise<PrepDay> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/prep${q}`).then(mapPrepDay);
+  }
+
+  recordCafePrep(workspaceId: string, input: PrepTicketDraft): Promise<PrepDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/prep/tickets`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapPrepDay);
+  }
+
+  readyCafePrep(workspaceId: string, ticketId: string): Promise<PrepDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/prep/${ticketId}/ready`, { method: "POST" })
+      .then(mapPrepDay);
+  }
+
+  serveCafePrep(workspaceId: string, ticketId: string): Promise<PrepDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/prep/${ticketId}/serve`, { method: "POST" })
+      .then(mapPrepDay);
   }
 }

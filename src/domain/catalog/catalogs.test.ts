@@ -14,7 +14,7 @@ describe("vertical catalogs", () => {
     expect(cafeCatalog.gmTabs()).toEqual(["dashboard", "today", "ops", "feedback"]);
     expect(cafeCatalog.gmTabs()).not.toContain("reservations");
     expect(cafeCatalog.floorOpsDepartment()).toBe("SERVICE");
-    expect(cafeCatalog.executiveSignals()).toEqual(["handover", "late_staff", "customer_voice", "breakdown", "daily_close", "checklist", "cash_variance"]);
+    expect(cafeCatalog.executiveSignals()).toEqual(["handover", "late_staff", "customer_voice", "breakdown", "daily_close", "checklist", "prep_time", "cash_variance"]);
     expect(cafeCatalog.executiveSignals()).not.toContain("reservations");
     expect(cafeCatalog.dashboardModules()).toEqual(["pulse", "reports", "cash", "approvals", "sales", "waste"]);
     expect(cafeCatalog.dashboardModules()).not.toContain("occupancy");

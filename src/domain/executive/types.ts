@@ -15,6 +15,9 @@ export interface BriefPulse {
   openDone: number;
   closeChecks: number;
   closeDone: number;
+  waitingPrep: number;
+  readyPrep: number;
+  servedPrep: number;
 }
 
 export interface BriefHeadline {
