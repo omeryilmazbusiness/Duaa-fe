@@ -10,6 +10,8 @@ export function FloorChip({
   icon: Icon,
   tone = "sky",
   active,
+  selected,
+  meta,
   onClick,
   testId,
 }: {
@@ -18,13 +20,17 @@ export function FloorChip({
   tone?: Tone;
   /** Quiet pulse when something is waiting — no big numbers. */
   active?: boolean;
+  selected?: boolean;
+  /** Optional quiet count / status — kept small. */
+  meta?: string | number;
   onClick?: () => void;
   testId?: string;
 }) {
   const shell = cn(
-    "group flex w-full items-center gap-2.5 rounded-[16px] border border-white/70 bg-white/80 px-2.5 py-2 shadow-[0_1px_0_rgba(15,23,42,0.03),0_8px_20px_-16px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-200",
+    "group flex w-full items-center gap-2.5 rounded-[16px] border bg-white/80 px-2.5 py-2 shadow-[0_1px_0_rgba(15,23,42,0.03),0_8px_20px_-16px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all duration-200",
     "hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.4)]",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10",
+    selected ? "border-zinc-900/15 bg-white ring-2 ring-zinc-900/8" : "border-white/70",
   );
 
   const body = (
@@ -49,6 +55,9 @@ export function FloorChip({
       <span className="min-w-0 flex-1 truncate text-start text-[12px] font-semibold tracking-[-0.01em] text-zinc-800">
         {label}
       </span>
+      {meta !== undefined ? (
+        <span className="shrink-0 text-[11px] font-semibold tabular-nums text-zinc-400">{meta}</span>
+      ) : null}
     </>
   );
 

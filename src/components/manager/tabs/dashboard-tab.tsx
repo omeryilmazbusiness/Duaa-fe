@@ -19,10 +19,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { DashboardCommandBar } from "@/components/dashboard/command-bar";
-import { MetricTile } from "@/components/dashboard/metric-tile";
-import { StatTile } from "@/components/dashboard/stat-tile";
-import { WidgetCard } from "@/components/dashboard/widget-card";
+import { FloorChip } from "@/components/dashboard/floor-chip";
+import { TodayBriefHero } from "@/components/dashboard/today-brief-hero";
 import { ApprovalInbox } from "@/components/manager/approval-inbox";
 import { CashPanel } from "@/components/manager/cash-panel";
 import { CafeWasteCard } from "@/components/manager/cafe-waste-card";
@@ -49,7 +47,7 @@ import { kernel } from "@/lib/kernel";
 import { qk } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
-import { TONE_GRADIENT } from "@/theme/tones";
+import { TONE_GRADIENT, TONE_WELL } from "@/theme/tones";
 
 const TILE_ICON: Record<string, LucideIcon> = {
   reports: FileWarning,
@@ -146,8 +144,14 @@ export function DashboardTab({
   });
 
   const recordPOS = useMutation({
-    mutationFn: (input: { externalRef: string; kind: "sale" | "return"; tender: "cash" | "card" | "other"; lines: number; gross: number; discount?: number }) =>
-      kernel.recordCafePOS(wid, input),
+    mutationFn: (input: {
+      externalRef: string;
+      kind: "sale" | "return";
+      tender: "cash" | "card" | "other";
+      lines: number;
+      gross: number;
+      discount?: number;
+    }) => kernel.recordCafePOS(wid, input),
     onSuccess: () => {
       toast.success(t.posRecord);
       invalidate();
@@ -176,20 +180,31 @@ export function DashboardTab({
   const pulse = dash.data?.pulse ?? EMPTY_PULSE;
   const tiles = sourceTiles(dash.data?.tiles ?? []);
   const workload = dash.data?.workload ?? [];
-  const busy = closeTill.isPending || submitPack.isPending || actPack.isPending || attachPack.isPending || recordPOS.isPending || closePOS.isPending;
+  const busy =
+    closeTill.isPending ||
+    submitPack.isPending ||
+    actPack.isPending ||
+    attachPack.isPending ||
+    recordPOS.isPending ||
+    closePOS.isPending;
   const kpis = pulseKpis(pulse);
   const quick = dashboardQuickActions(session.tabs, isGm);
 
-  return (
-    <div className="space-y-5" data-testid="dashboard-board">
-      <header className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{t.tabDashboard}</h1>
-        <p className="max-w-2xl text-sm font-medium text-zinc-500">{t.dashSubtitle}</p>
-      </header>
+  const summary =
+    pulse.overdueTasks > 0
+      ? pulse.overdueTasks === 1
+        ? t.headlineOverdueOne
+        : t.headlineOverdue.replace("{n}", String(pulse.overdueTasks))
+      : pulse.openTasks > 0
+        ? t.dashHeroTitle
+        : t.allClear;
 
-      <DashboardCommandBar
-        title={t.dashHeroTitle}
-        hint={t.dashHeroHint.replace("{name}", session.workspace.name)}
+  return (
+    <div className="space-y-4" data-testid="dashboard-board">
+      <TodayBriefHero
+        kicker={t.tabDashboard}
+        summary={summary}
+        detail={t.dashHeroHint.replace("{name}", session.workspace.name)}
         actions={quick.map((item) => ({
           id: item.id,
           label: t[QUICK_LABEL[item.id] ?? "tabDashboard"],
@@ -206,30 +221,37 @@ export function DashboardTab({
       />
 
       {dash.isLoading ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <Skeleton className="h-[148px] rounded-[28px]" />
-          <Skeleton className="h-[148px] rounded-[28px]" />
-          <Skeleton className="h-[148px] rounded-[28px]" />
-          <Skeleton className="h-[148px] rounded-[28px]" />
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <Skeleton className="h-12 rounded-[16px]" />
+          <Skeleton className="h-12 rounded-[16px]" />
+          <Skeleton className="h-12 rounded-[16px]" />
+          <Skeleton className="h-12 rounded-[16px]" />
         </div>
       ) : dash.isError ? (
-        <WidgetCard title={t.tabDashboard} icon={Ban} tone="rose" testId="dashboard-error">
+        <section className="rounded-[28px] border border-rose-100 bg-white/90 px-5 py-6 shadow-[0_24px_50px_-32px_rgba(15,23,42,0.35)]" data-testid="dashboard-error">
           <p className="text-sm text-rose-700">{dash.error instanceof Error ? dash.error.message : t.dashFailed}</p>
           <button type="button" className="mt-3 text-sm font-semibold text-[#007AFF]" onClick={() => void dash.refetch()}>
             {t.dashRetry}
           </button>
-        </WidgetCard>
+        </section>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="dashboard-kpis">
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-2.5" data-testid="dashboard-kpis">
             {kpis.map((kpi) => (
-              <StatTile
+              <FloorChip
                 key={kpi.id}
                 label={t[kpi.labelKey]}
-                value={kpi.value}
                 tone={kpi.tone}
                 icon={PULSE_ICON[kpi.id] ?? Users}
-                onClick={kpi.id === "overdue" || kpi.id === "open" ? () => onOpenTab("ops") : kpi.id === "employees" ? () => onOpenTab("today") : undefined}
+                active={kpi.value > 0}
+                meta={kpi.value}
+                onClick={
+                  kpi.id === "overdue" || kpi.id === "open"
+                    ? () => onOpenTab("ops")
+                    : kpi.id === "employees"
+                      ? () => onOpenTab("today")
+                      : undefined
+                }
                 testId={`dashboard-kpi-${kpi.id}`}
               />
             ))}
@@ -266,69 +288,112 @@ export function DashboardTab({
 
           <div className="grid gap-4 lg:grid-cols-2">
             {tiles.length > 0 ? (
-              <WidgetCard title={t.dashSources} icon={Utensils} tone="sky" testId="dashboard-sources">
-                <div className={cn("grid gap-2", tiles.length > 3 ? "grid-cols-3" : "grid-cols-2")}>
+              <section
+                className="overflow-hidden rounded-[28px] border border-white/80 bg-white/85 shadow-[0_1px_0_rgba(15,23,42,0.04),0_24px_50px_-32px_rgba(15,23,42,0.4)] backdrop-blur-xl"
+                data-testid="dashboard-sources"
+              >
+                <header className="flex items-center gap-3 border-b border-zinc-100/80 px-5 py-4">
+                  <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-[12px] text-white", TONE_WELL.sky)}>
+                    <Utensils className="h-4 w-4" strokeWidth={2.1} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold tracking-tight text-zinc-950">{t.dashSources}</p>
+                    <p className="truncate text-[12px] font-medium text-zinc-500">{t.dashSubtitle}</p>
+                  </div>
+                </header>
+                <div className={cn("grid gap-2 p-4", tiles.length > 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2")}>
                   {tiles.map((tile) => {
                     const Icon = TILE_ICON[tileIconKey(tile.module)] ?? Ban;
                     const live = tile.status === "live";
-                    const value = live
+                    const caption = live
                       ? tile.module === "cash" || tile.module === "waste"
                         ? formatIQD(tile.value, locale)
-                        : tile.value
-                      : "—";
+                        : String(tile.value)
+                      : t[reasonCopyKey(tile.reasonKey)];
                     return (
-                      <MetricTile
+                      <div
                         key={tile.module}
-                        icon={Icon}
-                        tone={tileTone(tile)}
-                        value={value}
-                        label={t[tileCopyKey(tile.labelKey)]}
-                        caption={live ? undefined : t[reasonCopyKey(tile.reasonKey)]}
-                        compact={tile.module === "cash" || tile.module === "waste"}
-                        testId={`dashboard-source-${tile.module}`}
-                      />
+                        className="rounded-[16px] border border-white/70 bg-white/80 px-3 py-2.5 shadow-[0_8px_20px_-16px_rgba(15,23,42,0.35)]"
+                        data-testid={`dashboard-source-${tile.module}`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={cn(
+                              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-white",
+                              TONE_WELL[tileTone(tile)],
+                            )}
+                          >
+                            <Icon className="h-3.5 w-3.5" strokeWidth={2.1} />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-[12px] font-semibold text-zinc-800">{t[tileCopyKey(tile.labelKey)]}</p>
+                            <p className="truncate text-[11px] font-medium tabular-nums text-zinc-500">{caption}</p>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
-              </WidgetCard>
+              </section>
             ) : null}
 
-            <WidgetCard
-              title={t.workload}
-              icon={Users}
-              tone="amber"
-              count={workload.length}
-              onOpen={() => onOpenTab("ops")}
-              openLabel={t.goToTab}
-              testId="dashboard-workload"
+            <section
+              className="overflow-hidden rounded-[28px] border border-white/80 bg-white/85 shadow-[0_1px_0_rgba(15,23,42,0.04),0_24px_50px_-32px_rgba(15,23,42,0.4)] backdrop-blur-xl"
+              data-testid="dashboard-workload"
             >
-              {workload.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-8 text-center">
-                  <span className={cn("flex h-14 w-14 items-center justify-center rounded-[20px]", TONE_GRADIENT.emerald)}>
-                    <CheckCircle2 className="h-7 w-7" strokeWidth={2} />
+              <header className="flex items-center justify-between gap-3 border-b border-zinc-100/80 px-5 py-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-[12px] text-white", TONE_WELL.amber)}>
+                    <Users className="h-4 w-4" strokeWidth={2.1} />
                   </span>
-                  <p className="text-[15px] font-semibold text-zinc-900">{t.noWorkload}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold tracking-tight text-zinc-950">{t.workload}</p>
+                    <p className="truncate text-[12px] font-medium text-zinc-500">{t.opsEmptyHint}</p>
+                  </div>
                 </div>
-              ) : (
-                <ul className="space-y-1">
-                  {workload.map((row) => (
-                    <li key={row.userId} className="flex items-center gap-3.5 rounded-[20px] px-2.5 py-2 hover:bg-zinc-50/90">
-                      <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl", TONE_GRADIENT[workloadTone(row)])}>
-                        <Users className="h-5 w-5" strokeWidth={2} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-semibold tracking-tight text-zinc-900">{row.name}</span>
-                        <span className="block truncate text-[12px] font-medium text-zinc-500">
-                          {row.department ? `${departmentLabel(row.department)} · ` : ""}
-                          {t.open} {row.openTasks}
-                          {row.overdueTasks > 0 ? ` · ${t.overdue} ${row.overdueTasks}` : ""}
+                <button
+                  type="button"
+                  onClick={() => onOpenTab("ops")}
+                  className="shrink-0 rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-semibold text-zinc-700 transition hover:bg-zinc-200"
+                >
+                  {t.goToTab}
+                </button>
+              </header>
+
+              <div className="px-3 py-3 sm:px-4">
+                {workload.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-10 text-center">
+                    <span className={cn("flex h-14 w-14 items-center justify-center rounded-[20px]", TONE_GRADIENT.emerald)}>
+                      <CheckCircle2 className="h-7 w-7" strokeWidth={2} />
+                    </span>
+                    <p className="text-[15px] font-semibold text-zinc-900">{t.noWorkload}</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-1">
+                    {workload.map((row) => (
+                      <li key={row.userId} className="flex items-center gap-3.5 rounded-[20px] px-2.5 py-2.5 transition-colors hover:bg-zinc-50/90">
+                        <span
+                          className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px]",
+                            TONE_GRADIENT[workloadTone(row)],
+                          )}
+                        >
+                          <Users className="h-4 w-4" strokeWidth={2} />
                         </span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </WidgetCard>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14px] font-semibold tracking-tight text-zinc-900">{row.name}</span>
+                          <span className="block truncate text-[12px] font-medium text-zinc-500">
+                            {row.department ? `${departmentLabel(row.department)} · ` : ""}
+                            {t.open} {row.openTasks}
+                            {row.overdueTasks > 0 ? ` · ${t.overdue} ${row.overdueTasks}` : ""}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
           </div>
         </>
       )}

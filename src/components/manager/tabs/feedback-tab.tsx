@@ -1,7 +1,20 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardCheck, ClipboardList, Handshake, LayoutGrid, ListTodo, MessageSquare, QrCode, Wrench } from "lucide-react";
+import {
+  ClipboardCheck,
+  ClipboardList,
+  Handshake,
+  LayoutGrid,
+  ListTodo,
+  MessageSquare,
+  QrCode,
+  Sun,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+import { FloorChip } from "@/components/dashboard/floor-chip";
+import { TodayBriefHero } from "@/components/dashboard/today-brief-hero";
 import { CafeChecklistCard } from "@/components/manager/cafe-checklist-card";
 import { CafeWasteCard } from "@/components/manager/cafe-waste-card";
 import { CafeHandoverCard } from "@/components/manager/cafe-handover-card";
@@ -9,13 +22,46 @@ import { CafeIntakeCard } from "@/components/manager/cafe-intake-card";
 import { ReportInbox } from "@/components/manager/report-inbox";
 import { VoiceInbox } from "@/components/manager/tabs/voice-inbox";
 import { CafeQRDesk } from "@/components/settings/cafe-qr-desk";
-import { DashboardCommandBar } from "@/components/dashboard/command-bar";
-import { StatTile } from "@/components/dashboard/stat-tile";
-import { WidgetCard } from "@/components/dashboard/widget-card";
 import type { ManagerTab } from "@/domain/catalog";
 import { kernel } from "@/lib/kernel";
 import { qk } from "@/lib/query-keys";
+import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import { TONE_SOFT, TONE_WELL, type Tone } from "@/theme/tones";
+
+function GlassPanel({
+  title,
+  icon: Icon,
+  tone,
+  count,
+  testId,
+  children,
+}: {
+  title: string;
+  icon: LucideIcon;
+  tone: Tone;
+  count?: number;
+  testId?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className="overflow-hidden rounded-[28px] border border-white/80 bg-white/85 shadow-[0_1px_0_rgba(15,23,42,0.04),0_24px_50px_-32px_rgba(15,23,42,0.4)] backdrop-blur-xl"
+      data-testid={testId}
+    >
+      <header className="flex items-center gap-3 border-b border-zinc-100/80 px-5 py-4">
+        <span className={cn("inline-flex h-9 w-9 items-center justify-center rounded-[12px] text-white", TONE_WELL[tone])}>
+          <Icon className="h-4 w-4" strokeWidth={2.1} />
+        </span>
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-zinc-950">{title}</h2>
+        {count !== undefined ? (
+          <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums", TONE_SOFT[tone])}>{count}</span>
+        ) : null}
+      </header>
+      <div className="px-4 py-4 sm:px-5">{children}</div>
+    </section>
+  );
+}
 
 export function FeedbackTab({
   workspaceId,
@@ -42,84 +88,98 @@ export function FeedbackTab({
   const handoverOpen = handover.data?.persisted === true && handover.data.status === "open";
   const closeWritten = intake.data?.persisted === true;
   const checkRemaining = checks.data ? checks.data.open.remaining + checks.data.close.remaining : 0;
-  const checkTotal = checks.data ? checks.data.open.total + checks.data.close.total : 0;
+
+  const summary =
+    lateRecoveries > 0
+      ? t.floorLate
+      : openRecoveries > 0 || openBreakdowns > 0
+        ? t.feedbackKicker
+        : t.allClear;
 
   return (
-    <div className="space-y-5" data-testid="feedback-board">
-      <header className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{t.tabFeedback}</h1>
-        <p className="max-w-2xl text-sm font-medium text-zinc-500">{t.feedbackHint}</p>
-      </header>
+    <div className="space-y-4" data-testid="feedback-board">
+      <TodayBriefHero
+        kicker={t.tabFeedback}
+        summary={summary}
+        detail={t.feedbackHint}
+        actions={
+          onOpenTab
+            ? [
+                { id: "today", label: t.tabToday, icon: Sun, tone: "rose", onClick: () => onOpenTab("today") },
+                { id: "ops", label: t.tabOps, icon: ListTodo, tone: "amber", onClick: () => onOpenTab("ops") },
+                { id: "dashboard", label: t.tabDashboard, icon: LayoutGrid, tone: "teal", onClick: () => onOpenTab("dashboard") },
+              ]
+            : []
+        }
+      />
 
-      {onOpenTab ? (
-        <DashboardCommandBar
-          title={t.feedbackKicker}
-          hint={t.feedbackHint}
-          actions={[
-            { id: "today", label: t.tabToday, icon: LayoutGrid, tone: "rose", onClick: () => onOpenTab("today") },
-            { id: "ops", label: t.tabOps, icon: ListTodo, tone: "amber", onClick: () => onOpenTab("ops") },
-          ]}
-        />
-      ) : null}
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4" data-testid="feedback-kpis">
-        <StatTile
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-2.5" data-testid="feedback-kpis">
+        <FloorChip
           label={t.floorRecoveries}
-          value={pending ? "—" : openRecoveries}
-          caption={!pending && lateRecoveries > 0 ? t.floorLate : undefined}
-          tone={lateRecoveries > 0 ? "rose" : "sky"}
           icon={MessageSquare}
+          tone={lateRecoveries > 0 ? "rose" : "sky"}
+          active={!pending && openRecoveries > 0}
+          meta={pending ? "—" : openRecoveries}
           testId="feedback-kpi-recoveries"
         />
-        <StatTile label={t.floorBreakdowns} value={pending ? "—" : openBreakdowns} tone="rose" icon={Wrench} testId="feedback-kpi-breakdowns" />
-        <StatTile
+        <FloorChip
+          label={t.floorBreakdowns}
+          icon={Wrench}
+          tone="rose"
+          active={!pending && openBreakdowns > 0}
+          meta={pending ? "—" : openBreakdowns}
+          testId="feedback-kpi-breakdowns"
+        />
+        <FloorChip
           label={t.floorHandover}
-          value={pending ? "—" : handoverOpen ? 1 : 0}
-          caption={pending ? undefined : handoverOpen ? t.floorHandoverOpen : t.floorHandoverQuiet}
-          tone="violet"
           icon={Handshake}
+          tone="violet"
+          active={!pending && handoverOpen}
+          meta={pending ? "—" : handoverOpen ? 1 : 0}
           testId="feedback-kpi-handover"
         />
-        <StatTile
+        <FloorChip
           label={t.floorClose}
-          value={pending ? "—" : closeWritten ? 1 : 0}
-          caption={pending ? undefined : closeWritten ? t.floorCloseWritten : t.floorCloseOpen}
-          tone="teal"
           icon={ClipboardCheck}
+          tone="teal"
+          active={!pending && closeWritten}
+          meta={pending ? "—" : closeWritten ? 1 : 0}
           testId="feedback-kpi-close"
         />
-        <StatTile
+        <FloorChip
           label={t.floorChecks}
-          value={pending ? "—" : checkRemaining}
-          caption={pending ? undefined : checkTotal === 0 ? t.floorChecksQuiet : checkRemaining === 0 ? t.floorChecksDone : t.floorChecksOpen}
-          tone="indigo"
           icon={ClipboardList}
+          tone="indigo"
+          active={!pending && checkRemaining > 0}
+          meta={pending ? "—" : checkRemaining}
           testId="feedback-kpi-checks"
         />
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <WidgetCard title={t.reviewInbox} icon={MessageSquare} tone="sky" count={openRecoveries} testId="feedback-voice">
+        <GlassPanel title={t.reviewInbox} icon={MessageSquare} tone="sky" count={openRecoveries} testId="feedback-voice">
           <VoiceInbox workspaceId={workspaceId} canRecover={canRotate} />
-        </WidgetCard>
-        <WidgetCard title={t.employeeReports} icon={Wrench} tone="rose" count={openBreakdowns} testId="feedback-reports">
+        </GlassPanel>
+        <GlassPanel title={t.employeeReports} icon={Wrench} tone="rose" count={openBreakdowns} testId="feedback-reports">
           <ReportInbox workspaceId={workspaceId} canAssign={canAssign} emptyLabel={t.noReports} />
-        </WidgetCard>
-        <WidgetCard title={t.intakeTitle} icon={ClipboardCheck} tone="teal" testId="feedback-intake">
+        </GlassPanel>
+        <GlassPanel title={t.intakeTitle} icon={ClipboardCheck} tone="teal" testId="feedback-intake">
           <CafeIntakeCard workspaceId={workspaceId} />
-        </WidgetCard>
-        <WidgetCard title={t.handoverTitle} icon={Handshake} tone="violet" testId="feedback-handover">
+        </GlassPanel>
+        <GlassPanel title={t.handoverTitle} icon={Handshake} tone="violet" testId="feedback-handover">
           <CafeHandoverCard workspaceId={workspaceId} />
-        </WidgetCard>
-        <WidgetCard title={t.checkTitle} icon={ClipboardList} tone="indigo" testId="feedback-checklist">
+        </GlassPanel>
+        <GlassPanel title={t.checkTitle} icon={ClipboardList} tone="indigo" testId="feedback-checklist">
           <CafeChecklistCard workspaceId={workspaceId} />
-        </WidgetCard>
-        <CafeWasteCard workspaceId={workspaceId} />
+        </GlassPanel>
+        <div className="min-w-0">
+          <CafeWasteCard workspaceId={workspaceId} />
+        </div>
       </div>
 
-      <WidgetCard title={t.qrDesk} icon={QrCode} tone="indigo" testId="feedback-qr">
+      <GlassPanel title={t.qrDesk} icon={QrCode} tone="indigo" testId="feedback-qr">
         <CafeQRDesk workspaceId={workspaceId} canRotate={canRotate} />
-      </WidgetCard>
+      </GlassPanel>
     </div>
   );
 }

@@ -4,28 +4,12 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUp, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { chatTitle } from "@/domain/assistant/desk";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  canSend,
-  MAX_MESSAGE_CHARS,
-  usageRatio,
-  type AssistantErrorKind,
-  type AssistantUsage,
-} from "@/domain/assistant/types";
+import { canSend, MAX_MESSAGE_CHARS, usageRatio, type AssistantUsage } from "@/domain/assistant/types";
 import type { SessionPayload } from "@/domain/session/types";
-import type { Messages } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import { AiMark } from "./ai-mark";
 import { useAssistantChat, useAssistantStatus } from "./use-assistant";
-
-const ERROR_COPY: Record<AssistantErrorKind, keyof Messages> = {
-  limit: "aiErrLimit",
-  key: "aiErrKey",
-  provider: "aiErrProvider",
-  not_configured: "aiErrNotConfigured",
-  warming: "aiWarmingBody",
-  generic: "aiErrGeneric",
-};
 
 /** Floating DUAA AI — always on the right for the GM. Chat opens only when available. */
 export function AssistantWidget({ session }: { session: SessionPayload }) {
@@ -105,13 +89,13 @@ function AssistantWarming() {
             </header>
 
             <div className="relative flex flex-1 flex-col items-center justify-center gap-4 px-6 pb-8 pt-2 text-center">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/30">
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/30">
                 <Sparkles className="h-6 w-6" strokeWidth={1.8} />
               </span>
               <p
                 role="status"
                 data-testid="ai-warming-message"
-                className="rounded-2xl bg-orange-50 px-4 py-3 text-[13.5px] leading-snug text-orange-800 ring-1 ring-orange-200/80"
+                className="rounded-2xl bg-emerald-50 px-4 py-3 text-[13.5px] leading-snug text-emerald-800 ring-1 ring-emerald-200/80"
               >
                 {t.aiWarmingBody}
               </p>
@@ -301,15 +285,10 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
               {chat.error ? (
                 <p
                   role="status"
-                  data-testid={chat.error === "warming" ? "ai-warming-message" : "ai-error"}
-                  className={cn(
-                    "rounded-2xl px-3.5 py-2.5 text-[12.5px] leading-snug ring-1",
-                    chat.error === "warming"
-                      ? "bg-orange-50 text-orange-800 ring-orange-200/80"
-                      : "bg-rose-50 text-rose-800 ring-rose-200/60",
-                  )}
+                  data-testid="ai-warming-message"
+                  className="rounded-2xl bg-emerald-50 px-3.5 py-2.5 text-[12.5px] leading-snug text-emerald-800 ring-1 ring-emerald-200/80"
                 >
-                  {t[ERROR_COPY[chat.error]]}
+                  {t.aiWarmingBody}
                 </p>
               ) : null}
             </div>

@@ -265,7 +265,7 @@ export const en = {
   aiPrivacyNote: "Your questions and a snapshot of today's workspace data are sent to your AI provider using your key.",
   aiWarmingTagline: "Preparing for tomorrow",
   aiWarmingBody:
-    "DUAA AI is currently preparing tomorrow’s GM report. Please try again shortly — it will be active very soon.",
+    "DUAA AI is working on tomorrow’s analysis. It will be active shortly.",
   aiOpen: "Open DUAA AI",
   aiClose: "Close",
   aiWelcomeTitle: "How can I help?",

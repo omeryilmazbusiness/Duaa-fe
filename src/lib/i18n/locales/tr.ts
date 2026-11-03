@@ -267,7 +267,7 @@ export const tr: Messages = {
   aiPrivacyNote: "Sorularınız ve bugünkü işletme verisinin özeti, anahtarınızla AI sağlayıcınıza gönderilir.",
   aiWarmingTagline: "Yarın için hazırlanıyor",
   aiWarmingBody:
-    "DUAA AI şu anda yarınki GM raporu için hazırlık yapıyor. Lütfen kısa bir süre sonra tekrar deneyin — çok yakında aktif olacak.",
+    "DUAA AI yarınki analiz için çalışıyor. Birazdan aktif olacak.",
   aiOpen: "DUAA AI'ı aç",
   aiClose: "Kapat",
   aiWelcomeTitle: "Nasıl yardımcı olabilirim?",
