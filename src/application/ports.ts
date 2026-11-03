@@ -10,6 +10,7 @@ import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definitio
 import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
 import type { POSDay, POSTicketDraft } from "@/domain/cafe/pos";
 import type { PrepDay, PrepTicketDraft } from "@/domain/cafe/prep";
+import type { StockAdjustDraft, StockDay, StockItemDraft } from "@/domain/cafe/stock";
 import type { RecipeDraft, WasteDay, WasteTicketDraft } from "@/domain/cafe/waste";
 import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
@@ -162,6 +163,9 @@ export interface CafePort {
   getCafeWaste(workspaceId: string, date?: string): Promise<WasteDay>;
   recordCafeWaste(workspaceId: string, input: WasteTicketDraft): Promise<WasteDay>;
   saveCafeRecipes(workspaceId: string, recipes: RecipeDraft[]): Promise<WasteDay>;
+  getCafeStock(workspaceId: string, date?: string): Promise<StockDay>;
+  saveCafeStockCatalog(workspaceId: string, items: StockItemDraft[]): Promise<StockDay>;
+  recordCafeStockAdjustment(workspaceId: string, input: StockAdjustDraft): Promise<StockDay>;
 }
 
 export interface AssistantPort {

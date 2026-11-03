@@ -23,6 +23,14 @@ import {
 import type { CafeCheckLine, CafeChecklist, CheckKind } from "@/domain/cafe/checklist";
 import type { POSDay, POSTender, POSTicket, POSTicketKind } from "@/domain/cafe/pos";
 import type { PrepDay, PrepStation, PrepStatus, PrepTicket } from "@/domain/cafe/prep";
+import type {
+  StockAdjustment,
+  StockAdjustReason,
+  StockDay,
+  StockItem,
+  StockStation,
+  StockUnit,
+} from "@/domain/cafe/stock";
 import type { Recipe, WasteDay, WasteReason, WasteStation, WasteTicket } from "@/domain/cafe/waste";
 import { isCheckKind } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverRef } from "@/domain/cafe/handover";
@@ -887,5 +895,77 @@ export function mapWasteDay(raw: unknown): WasteDay {
     recipes,
     canRecord: bool(r.canRecord),
     canEditRecipes: bool(r.canEditRecipes),
+  };
+}
+
+function mapStockStation(raw: unknown): StockStation {
+  return raw === "bar" ? "bar" : "kitchen";
+}
+
+function mapStockUnit(raw: unknown): StockUnit {
+  if (raw === "ml" || raw === "ea") return raw;
+  return "g";
+}
+
+function mapStockReason(raw: unknown): StockAdjustReason {
+  if (raw === "count" || raw === "receive" || raw === "use" || raw === "spoil") return raw;
+  return "other";
+}
+
+function mapStockItem(raw: unknown): StockItem | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = str(r.id);
+  const name = str(r.name);
+  if (!id || !name) return null;
+  return {
+    id,
+    name,
+    station: mapStockStation(r.station),
+    unit: mapStockUnit(r.unit),
+    onHand: num(r.onHand),
+    par: num(r.par),
+    level: Math.max(0, Math.min(100, Math.round(num(r.level)))),
+    active: bool(r.active),
+    low: bool(r.low),
+  };
+}
+
+function mapStockAdjustment(raw: unknown): StockAdjustment | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = str(r.id);
+  const itemId = str(r.itemId);
+  if (!id || !itemId) return null;
+  return {
+    id,
+    itemId,
+    itemName: str(r.itemName),
+    delta: num(r.delta),
+    onHandAfter: num(r.onHandAfter),
+    reason: mapStockReason(r.reason),
+    note: str(r.note) || undefined,
+    recordedAt: str(r.recordedAt),
+    businessDate: str(r.businessDate),
+  };
+}
+
+export function mapStockDay(raw: unknown): StockDay {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const items = Array.isArray(r.items) ? r.items.map(mapStockItem).filter((x): x is StockItem => x !== null) : [];
+  const adjustments = Array.isArray(r.adjustments)
+    ? r.adjustments.map(mapStockAdjustment).filter((x): x is StockAdjustment => x !== null)
+    : [];
+  return {
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    status: r.status === "live" ? "live" : "unavailable",
+    reasonKey: str(r.reasonKey) || undefined,
+    itemCount: num(r.itemCount),
+    lowCount: num(r.lowCount),
+    items,
+    adjustments,
+    canRecord: bool(r.canRecord),
+    canEditCatalog: bool(r.canEditCatalog),
   };
 }

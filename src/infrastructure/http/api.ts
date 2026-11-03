@@ -11,6 +11,7 @@ import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definitio
 import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
 import type { POSDay, POSTicketDraft } from "@/domain/cafe/pos";
 import type { PrepDay, PrepTicketDraft } from "@/domain/cafe/prep";
+import type { StockAdjustDraft, StockDay, StockItemDraft } from "@/domain/cafe/stock";
 import type { RecipeDraft, WasteDay, WasteTicketDraft } from "@/domain/cafe/waste";
 import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
@@ -31,6 +32,7 @@ import {
   mapCafeChecklist,
   mapPOSDay,
   mapPrepDay,
+  mapStockDay,
   mapWasteDay,
   mapCafeHandover,
   mapCafeIntake,
@@ -535,5 +537,28 @@ export class HttpKernelApi implements KernelApi {
         body: JSON.stringify({ recipes }),
       })
       .then(mapWasteDay);
+  }
+
+  getCafeStock(workspaceId: string, date?: string): Promise<StockDay> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/stock${q}`).then(mapStockDay);
+  }
+
+  saveCafeStockCatalog(workspaceId: string, items: StockItemDraft[]): Promise<StockDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/stock/catalog`, {
+        method: "PUT",
+        body: JSON.stringify({ items }),
+      })
+      .then(mapStockDay);
+  }
+
+  recordCafeStockAdjustment(workspaceId: string, input: StockAdjustDraft): Promise<StockDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/stock/adjustments`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapStockDay);
   }
 }

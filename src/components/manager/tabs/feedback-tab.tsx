@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { CafeChecklistCard } from "@/components/manager/cafe-checklist-card";
+import { CafeStockCard } from "@/components/manager/cafe-stock-card";
 import { CafeWasteCard } from "@/components/manager/cafe-waste-card";
 import { CafeHandoverCard } from "@/components/manager/cafe-handover-card";
 import { CafeIntakeCard } from "@/components/manager/cafe-intake-card";
@@ -307,6 +308,7 @@ export function FeedbackTab({
                 <CafeChecklistCard workspaceId={workspaceId} />
               </div>
               <CafeWasteCard workspaceId={workspaceId} />
+              <CafeStockCard workspaceId={workspaceId} />
             </motion.div>
           ) : null}
         </AnimatePresence>

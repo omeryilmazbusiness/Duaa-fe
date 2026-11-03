@@ -23,6 +23,7 @@ import { FloorChip } from "@/components/dashboard/floor-chip";
 import { TodayBriefHero } from "@/components/dashboard/today-brief-hero";
 import { ApprovalInbox } from "@/components/manager/approval-inbox";
 import { CashPanel } from "@/components/manager/cash-panel";
+import { CafeStockCard } from "@/components/manager/cafe-stock-card";
 import { CafeWasteCard } from "@/components/manager/cafe-waste-card";
 import { POSPanel } from "@/components/manager/pos-panel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -282,6 +283,9 @@ export function DashboardTab({
               </div>
               <div className="lg:col-span-3">
                 <CafeWasteCard workspaceId={wid} />
+              </div>
+              <div className="lg:col-span-3">
+                <CafeStockCard workspaceId={wid} />
               </div>
             </div>
           ) : null}

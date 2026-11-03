@@ -10,7 +10,7 @@ import { qk } from "@/lib/query-keys";
  * Live Coffee Corner streams via existing ops ports.
  *
  * SRP: this hook only fetches + composes. Mapping lives in `domain/coffee-corner`.
- * React Query keys match Feedback / Reports / Waste so mutations elsewhere
+ * React Query keys match Feedback / Reports / Stock so mutations elsewhere
  * invalidate this widget automatically.
  */
 
@@ -57,9 +57,9 @@ export function useCoffeeCornerData(
     refetchIntervalInBackground: false,
   });
 
-  const waste = useQuery({
-    queryKey: qk.cafeWaste(workspaceId),
-    queryFn: () => kernel.getCafeWaste(workspaceId),
+  const stock = useQuery({
+    queryKey: qk.cafeStock(workspaceId),
+    queryFn: () => kernel.getCafeStock(workspaceId),
     staleTime: STALE_MS,
     refetchInterval: poll,
     refetchIntervalInBackground: false,
@@ -70,9 +70,9 @@ export function useCoffeeCornerData(
       coffeeCornerFromLive({
         reports: reports.data,
         voices: voices.data,
-        waste: waste.data,
+        stock: stock.data,
         nowMs,
       }),
-    [reports.data, voices.data, waste.data, nowMs],
+    [reports.data, voices.data, stock.data, nowMs],
   );
 }

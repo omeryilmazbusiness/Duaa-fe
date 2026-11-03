@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { CafeVoice } from "@/domain/cafe/qr";
-import type { WasteDay } from "@/domain/cafe/waste";
+import type { StockDay } from "@/domain/cafe/stock";
 import type { ReportView } from "@/domain/report/types";
-import { coffeeCornerFromLive, mapFaultsFromReports, mapRequestsFromLive, mapStockFromWaste } from "./from-live";
+import { coffeeCornerFromLive, mapFaultsFromReports, mapRequestsFromLive, mapStockFromInventory } from "./from-live";
 
 const NOW = Date.parse("2026-11-03T12:00:00.000Z");
 
@@ -74,51 +74,59 @@ describe("mapRequestsFromLive", () => {
   });
 });
 
-describe("mapStockFromWaste", () => {
-  it("marks stock unavailable when waste feed is down", () => {
-    const stock = mapStockFromWaste({ status: "unavailable", recipes: [], tickets: [] } as unknown as WasteDay);
+describe("mapStockFromInventory", () => {
+  it("marks stock unavailable when catalog is empty", () => {
+    const stock = mapStockFromInventory({
+      status: "unavailable",
+      items: [],
+      adjustments: [],
+      itemCount: 0,
+      lowCount: 0,
+    } as unknown as StockDay);
     expect(stock.available).toBe(false);
     expect(stock.items).toHaveLength(0);
   });
 
-  it("derives bar recipe health from waste grams", () => {
-    const waste: WasteDay = {
+  it("prefers bar items and uses recorded levels", () => {
+    const day: StockDay = {
       businessDate: "2026-11-03",
       timezone: "UTC",
       status: "live",
-      ticketCount: 1,
-      grams: 200,
-      cost: 10,
-      kitchenGrams: 0,
-      barGrams: 200,
+      itemCount: 2,
+      lowCount: 1,
       canRecord: true,
-      canEditRecipes: true,
-      recipes: [
+      canEditCatalog: true,
+      adjustments: [],
+      items: [
         {
-          id: "rec1",
-          name: "Flat white",
-          station: "bar",
-          lines: [{ title: "Milk", grams: 50 }],
+          id: "k1",
+          name: "Flour",
+          station: "kitchen",
+          unit: "g",
+          onHand: 100,
+          par: 1000,
+          level: 10,
+          active: true,
+          low: true,
         },
-      ],
-      tickets: [
         {
-          id: "t1",
-          item: "Flat white",
+          id: "b1",
+          name: "Oat milk",
           station: "bar",
-          grams: 200,
-          cost: 10,
-          reason: "spoilage",
-          recipeId: "rec1",
-          recordedAt: "2026-11-03T10:00:00.000Z",
-          businessDate: "2026-11-03",
+          unit: "ml",
+          onHand: 1800,
+          par: 3000,
+          level: 60,
+          active: true,
+          low: true,
         },
       ],
     };
-    // par = max(50*8, 400) = 400; level = 100 - 200/400*100 = 50
-    const stock = mapStockFromWaste(waste);
+    const stock = mapStockFromInventory(day);
     expect(stock.available).toBe(true);
-    expect(stock.lowest?.level).toBe(50);
+    expect(stock.items).toHaveLength(1);
+    expect(stock.lowest?.id).toBe("b1");
+    expect(stock.lowest?.level).toBe(60);
     expect(stock.severity).toBe("ok");
   });
 });
@@ -129,19 +137,16 @@ describe("coffeeCornerFromLive", () => {
       nowMs: NOW,
       reports: [report({ id: "b1", kind: "breakage", title: "Grinder", status: "open", createdAt: "2026-11-03T11:55:00.000Z" })],
       voices: [voice({ id: "v1", kind: "request", label: "4", comment: "Refill", createdAt: "2026-11-03T11:58:00.000Z" })],
-      waste: {
+      stock: {
         businessDate: "2026-11-03",
         timezone: "UTC",
         status: "live",
-        ticketCount: 0,
-        grams: 0,
-        cost: 0,
-        kitchenGrams: 0,
-        barGrams: 0,
+        itemCount: 0,
+        lowCount: 0,
         canRecord: true,
-        canEditRecipes: true,
-        recipes: [],
-        tickets: [],
+        canEditCatalog: true,
+        items: [],
+        adjustments: [],
       },
     });
     expect(snap.faults.open).toHaveLength(1);

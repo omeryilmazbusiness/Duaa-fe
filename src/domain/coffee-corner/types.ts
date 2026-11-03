@@ -10,11 +10,11 @@ export type Severity = "ok" | "warn" | "critical";
 
 export type StreamId = "stock" | "requests" | "faults";
 
-/* ── Stock (supply-health proxy until an inventory API exists) ── */
+/* ── Stock (recorded on-hand / par from inventory API) ── */
 export interface StockItem {
   readonly id: string;
   readonly label: string;
-  /** Remaining health, 0–100. */
+  /** Remaining health, 0–100 of par. */
   readonly level: number;
 }
 
@@ -23,7 +23,7 @@ export interface StockStatus {
   readonly lowest: StockItem | null;
   readonly severity: Severity;
   /**
-   * false when the waste/recipe feed is unavailable — UI must not invent levels.
+   * false when the stock catalog is unavailable — UI must not invent levels.
    * true with empty items means "wired and clear".
    */
   readonly available: boolean;

@@ -15,6 +15,6 @@ export {
   coffeeCornerFromLive,
   mapFaultsFromReports,
   mapRequestsFromLive,
-  mapStockFromWaste,
+  mapStockFromInventory,
   type LiveCoffeeCornerInput,
 } from "./from-live";

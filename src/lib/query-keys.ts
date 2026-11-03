@@ -19,5 +19,6 @@ export const qk = {
   cafeChecklist: (wid: string) => ["cafe", "checklist", wid] as const,
   cafePrep: (wid: string) => ["cafe", "prep", wid] as const,
   cafeWaste: (wid: string) => ["cafe", "waste", wid] as const,
+  cafeStock: (wid: string) => ["cafe", "stock", wid] as const,
   publicQR: (token: string) => ["public", "qr", token] as const,
 };

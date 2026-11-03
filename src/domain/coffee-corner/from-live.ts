@@ -1,22 +1,22 @@
 import type { CafeVoice } from "@/domain/cafe/qr";
-import type { WasteDay } from "@/domain/cafe/waste";
+import type { StockDay } from "@/domain/cafe/stock";
 import { isOpenReport, type ReportView } from "@/domain/report/types";
-import { buildFaults, buildRequests, buildStock, clamp, faultSeverity, minutesSince } from "./build";
+import { buildFaults, buildRequests, buildStock, faultSeverity, minutesSince } from "./build";
 import type { CoffeeCornerSnapshot, FaultReport, FloorRequest, StockItem } from "./types";
 
 /**
  * Pure adapter: ops DTOs → Coffee Corner snapshot.
  *
- * Mapping (intentional, no invention beyond documented proxies):
+ * Mapping (intentional, no invention):
  * - Faults   ← open breakage reports (arıza)
  * - Requests ← open guest voices kind=request + open staff reports kind=request
- * - Stock    ← bar recipe supply-health from today's waste (proxy until inventory API)
+ * - Stock    ← recorded inventory on-hand / par (never waste/recipe proxy)
  */
 
 export interface LiveCoffeeCornerInput {
   readonly reports?: readonly ReportView[] | null;
   readonly voices?: readonly CafeVoice[] | null;
-  readonly waste?: WasteDay | null;
+  readonly stock?: StockDay | null;
   readonly nowMs?: number;
 }
 
@@ -64,46 +64,24 @@ export function mapRequestsFromLive(
 }
 
 /**
- * Supply-health proxy: bar recipes vs today's waste grams.
- * When waste feed is down → available=false (UI must not fake %).
- * When live but no recipes/tickets → available=true, empty items (all clear).
+ * Inventory truth: on-hand levels from the stock catalog.
+ * When catalog is unavailable → available=false (UI must not fake %).
+ * When live with items → levels come from the API (onHand/par).
  */
-export function mapStockFromWaste(waste: WasteDay | null | undefined): ReturnType<typeof buildStock> {
-  if (!waste || waste.status !== "live") {
+export function mapStockFromInventory(stock: StockDay | null | undefined): ReturnType<typeof buildStock> {
+  if (!stock || stock.status !== "live") {
     return buildStock([], false);
   }
 
-  const barRecipes = waste.recipes.filter((r) => r.station === "bar");
-  const recipes = barRecipes.length > 0 ? barRecipes : waste.recipes;
+  const active = stock.items.filter((it) => it.active);
+  const bar = active.filter((it) => it.station === "bar");
+  const source = bar.length > 0 ? bar : active;
+  if (source.length === 0) return buildStock([], true);
 
-  if (recipes.length > 0) {
-    const items: StockItem[] = recipes.map((recipe) => {
-      const wasted = waste.tickets
-        .filter((t) => t.recipeId === recipe.id || t.item === recipe.name)
-        .reduce((sum, t) => sum + t.grams, 0);
-      const lineGrams = recipe.lines.reduce((sum, l) => sum + l.grams, 0);
-      // Soft daily budget: ~8× recipe BOM (or 400 g floor).
-      const par = Math.max(lineGrams * 8, 400);
-      const level = clamp(Math.round(100 - (wasted / par) * 100), 0, 100);
-      return { id: recipe.id, label: recipe.name, level };
-    });
-    return buildStock(items, true);
-  }
-
-  // No recipes: group raw waste tickets by item name.
-  const byItem = new Map<string, { grams: number; id: string }>();
-  for (const ticket of waste.tickets) {
-    const key = ticket.item.trim() || ticket.id;
-    const prev = byItem.get(key);
-    byItem.set(key, { id: ticket.recipeId || key, grams: (prev?.grams ?? 0) + ticket.grams });
-  }
-  if (byItem.size === 0) return buildStock([], true);
-
-  const items: StockItem[] = [...byItem.entries()].map(([label, { id, grams }]) => ({
-    id,
-    label,
-    // 500 g wasted → 0%. Honest relative pressure, not on-hand inventory.
-    level: clamp(100 - Math.round(grams / 5), 0, 100),
+  const items: StockItem[] = source.map((it) => ({
+    id: it.id,
+    label: it.name,
+    level: Math.max(0, Math.min(100, Math.round(it.level))),
   }));
   return buildStock(items, true);
 }
@@ -114,7 +92,7 @@ export function coffeeCornerFromLive(input: LiveCoffeeCornerInput): CoffeeCorner
   const voices = input.voices ?? [];
 
   return {
-    stock: mapStockFromWaste(input.waste),
+    stock: mapStockFromInventory(input.stock),
     requests: buildRequests(mapRequestsFromLive(voices, reports, nowMs)),
     faults: buildFaults(mapFaultsFromReports(reports, nowMs)),
     updatedAt: nowMs,
