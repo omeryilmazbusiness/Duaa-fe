@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import type { CafeDefinition } from "@/domain/cafe/definition";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/domain/cafe/setup";
 import { postLoginPath } from "@/domain/staff-scope";
 import { kernel } from "@/lib/kernel";
+import { FADE_UP, IOS_EASE, SLIDE_CARD, STAGE_SPRING } from "@/lib/motion";
 import { qk } from "@/lib/query-keys";
 import { useAuth } from "@/providers/auth-provider";
 import { useLocale } from "@/providers/locale-provider";
@@ -31,16 +32,6 @@ import { SetupIntro } from "./setup-intro";
 import { SLAStep } from "./sla-step";
 import { StepDock } from "./step-dock";
 import { TablesStep } from "./tables-step";
-
-type Slide = { dir: number; still: boolean };
-
-const CARD_MOTION: Variants = {
-  enter: ({ dir, still }: Slide) =>
-    still ? { opacity: 0 } : { opacity: 0, x: dir * 56, scale: 0.97, filter: "blur(10px)" },
-  center: { opacity: 1, x: 0, scale: 1, filter: "blur(0px)" },
-  exit: ({ dir, still }: Slide) =>
-    still ? { opacity: 0 } : { opacity: 0, x: dir * -56, scale: 0.97, filter: "blur(10px)" },
-};
 
 function SetupFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -218,7 +209,7 @@ function SetupFlow({
   }
 
   const position = step ? stepOrder(overview).indexOf(step) + 1 : overview.totalSteps;
-  const slide: Slide = { dir: (forward ? 1 : -1) * (rtl ? -1 : 1), still };
+  const slide = { dir: (forward ? 1 : -1) * (rtl ? -1 : 1), still };
   const eyebrow = step
     ? t.setupEyebrow.replace("{current}", String(position)).replace("{total}", String(overview.totalSteps))
     : t.setupEyebrowDone;
@@ -238,12 +229,18 @@ function SetupFlow({
       </header>
 
       <main className="mx-auto flex max-w-5xl flex-col items-center px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
-        <div className="mb-8 space-y-2 text-center">
+        <motion.div
+          className="mb-8 space-y-2 text-center"
+          variants={FADE_UP}
+          initial={still ? false : "hidden"}
+          animate="show"
+          transition={still ? { duration: 0.01 } : { duration: 0.5, ease: IOS_EASE }}
+        >
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/55">{eyebrow}</p>
           <h1 className="liquid-glass-text text-[34px] font-semibold leading-[1.15] tracking-[-0.035em] sm:text-[44px]">
             {t.setupTitle}
           </h1>
-        </div>
+        </motion.div>
 
         <StepDock steps={overview.steps} active={step} onSelect={(key) => setStep(key)} locked={locked} />
 
@@ -251,11 +248,15 @@ function SetupFlow({
           <motion.section
             key={step ?? "done"}
             custom={slide}
-            variants={CARD_MOTION}
+            variants={SLIDE_CARD}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: still ? 0.15 : 0.42, ease: [0.32, 0.72, 0, 1] }}
+            transition={
+              still
+                ? { duration: 0.12 }
+                : { ...STAGE_SPRING, opacity: { duration: 0.28, ease: IOS_EASE }, filter: { duration: 0.32, ease: IOS_EASE } }
+            }
             className="liquid-glass mt-10 w-full max-w-[600px] rounded-[32px] p-5 sm:p-8"
             data-testid={`setup-card-${step ?? "done"}`}
           >

@@ -1,7 +1,9 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { forwardRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
 import type { LucideIcon } from "lucide-react";
+import { PRESS, PRESS_SOFT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export const STEP_TINTS = {
@@ -147,20 +149,29 @@ export const GlassSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HT
   },
 );
 
-type PillProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type PillProps = Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onAnimationStart" | "onDrag" | "onDragStart" | "onDragEnd"
+> & {
   variant?: "primary" | "glass" | "plain";
 };
 
 export const PillButton = forwardRef<HTMLButtonElement, PillProps>(function PillButton(
-  { className, variant = "primary", type = "button", ...props },
+  { className, variant = "primary", type = "button", disabled, ...props },
   ref,
 ) {
+  const reduce = useReducedMotion();
+  const press = variant === "plain" ? PRESS_SOFT : PRESS;
   return (
-    <button
+    <motion.button
       ref={ref}
       type={type}
+      disabled={disabled}
+      whileHover={reduce || disabled ? undefined : press.whileHover}
+      whileTap={reduce || disabled ? undefined : press.whileTap}
+      transition={press.transition}
       className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[14px] font-semibold tracking-[-0.01em] transition-all duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f24]",
+        "inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[14px] font-semibold tracking-[-0.01em] will-change-transform disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f24]",
         variant === "primary" &&
           "bg-white text-zinc-950 shadow-[inset_0_-1px_0_rgba(15,23,42,0.08),0_12px_32px_-14px_rgba(186,230,253,0.55)] hover:bg-white/90",
         variant === "glass" && "glass-pill text-white/90 hover:bg-white/[0.14]",

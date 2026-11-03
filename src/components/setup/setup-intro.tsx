@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { FADE_UP, IOS_EASE, PILL_SPRING, PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import { LOCALES, localeNameKey, type StaffLocale } from "@/lib/i18n";
@@ -15,6 +17,7 @@ type Props = {
 export function SetupIntro({ onDone }: Props) {
   const { t, locale, setLocale, dir } = useLocale();
   const [leaving, setLeaving] = useState(false);
+  const reduce = useReducedMotion();
 
   function proceed() {
     if (leaving) return;
@@ -24,12 +27,20 @@ export function SetupIntro({ onDone }: Props) {
   }
 
   return (
-    <div
+    <motion.div
       data-testid="setup-intro"
       data-leaving={leaving || undefined}
+      variants={FADE_UP}
+      initial={reduce ? false : "hidden"}
+      animate={leaving ? { opacity: 0, scale: 1.04, filter: "blur(14px)" } : "show"}
+      transition={
+        leaving
+          ? { duration: 0.48, ease: IOS_EASE }
+          : { duration: 0.55, ease: IOS_EASE }
+      }
       className={cn(
-        "mx-auto flex min-h-dvh max-w-3xl flex-col items-center justify-center px-6 py-16 text-center transition-[opacity,filter,transform] duration-500 ease-out motion-reduce:transition-opacity",
-        leaving && "pointer-events-none scale-[1.03] opacity-0 blur-md",
+        "mx-auto flex min-h-dvh max-w-3xl flex-col items-center justify-center px-6 py-16 text-center",
+        leaving && "pointer-events-none",
       )}
     >
       <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[13px]">{t.setupIntroEyebrow}</p>
@@ -48,37 +59,48 @@ export function SetupIntro({ onDone }: Props) {
         {LOCALES.map((code) => {
           const active = code === locale;
           return (
-            <button
+            <motion.button
               key={code}
               type="button"
               role="radio"
               aria-checked={active}
               onClick={() => setLocale(code as StaffLocale)}
               data-testid={`setup-lang-${code}`}
+              whileTap={reduce ? undefined : { scale: 0.94 }}
+              transition={PRESS.transition}
               className={cn(
-                "h-10 truncate rounded-[12px] px-2 text-[13px] font-semibold transition-all duration-200",
-                active
-                  ? "bg-white/[0.2] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_1px_3px_rgba(0,0,0,0.35)]"
-                  : "text-white/55 hover:text-white/85",
+                "relative h-10 truncate rounded-[12px] px-2 text-[13px] font-semibold",
+                active ? "text-white" : "text-white/55 hover:text-white/85",
               )}
             >
-              {t[localeNameKey(code)]}
-            </button>
+              {active ? (
+                <motion.span
+                  layoutId="setup-lang-pill"
+                  className="absolute inset-0 rounded-[12px] bg-white/[0.2] shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_1px_3px_rgba(0,0,0,0.35)]"
+                  transition={reduce ? { duration: 0.01 } : PILL_SPRING}
+                  aria-hidden
+                />
+              ) : null}
+              <span className="relative z-10">{t[localeNameKey(code)]}</span>
+            </motion.button>
           );
         })}
       </div>
 
-      <button
+      <motion.button
         type="button"
         dir={dir}
         onClick={proceed}
         disabled={leaving}
         aria-busy={leaving || undefined}
         data-testid="setup-continue"
+        whileHover={reduce || leaving ? undefined : PRESS.whileHover}
+        whileTap={reduce || leaving ? undefined : PRESS.whileTap}
+        transition={PRESS.transition}
         className={cn(
-          "group relative mt-12 flex h-14 min-w-[220px] items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/20 bg-white/[0.12] px-8 text-[17px] font-semibold tracking-[-0.01em] text-white backdrop-blur-2xl transition-all duration-300",
+          "group relative mt-12 flex h-14 min-w-[220px] items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/20 bg-white/[0.12] px-8 text-[17px] font-semibold tracking-[-0.01em] text-white backdrop-blur-2xl",
           "shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_24px_48px_-24px_rgba(56,189,248,0.55)]",
-          "hover:border-white/35 hover:bg-white/[0.18] active:scale-[0.97] disabled:opacity-70",
+          "hover:border-white/35 hover:bg-white/[0.18] disabled:opacity-70",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050816]",
         )}
       >
@@ -95,7 +117,7 @@ export function SetupIntro({ onDone }: Props) {
             aria-hidden
           />
         )}
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 }

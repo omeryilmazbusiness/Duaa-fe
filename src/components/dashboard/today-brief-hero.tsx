@@ -1,6 +1,8 @@
 "use client";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { Sparkles, type LucideIcon } from "lucide-react";
+import { FADE_UP, IOS_EASE, PRESS_SOFT, STAGGER_PARENT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { TONE_WELL, type Tone } from "@/theme/tones";
 
@@ -27,10 +29,16 @@ export function TodayBriefHero({
   detail?: string;
   actions?: readonly BriefQuickAction[];
 }) {
+  const reduce = useReducedMotion();
+
   return (
-    <section
+    <motion.section
       className="relative overflow-hidden rounded-[28px] border border-white/80 bg-gradient-to-br from-white via-white to-zinc-50/90 p-6 shadow-[0_1px_0_rgba(15,23,42,0.04),0_28px_60px_-36px_rgba(15,23,42,0.45)] sm:p-8"
       data-testid="today-brief-hero"
+      variants={FADE_UP}
+      initial={reduce ? false : "hidden"}
+      animate="show"
+      transition={reduce ? { duration: 0.01 } : { duration: 0.55, ease: IOS_EASE }}
     >
       <div
         aria-hidden
@@ -60,23 +68,30 @@ export function TodayBriefHero({
         </div>
 
         {actions.length ? (
-          <nav
+          <motion.nav
             className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end"
             data-testid="dashboard-quick-actions"
             aria-label={kicker}
+            variants={STAGGER_PARENT}
+            initial={reduce ? false : "hidden"}
+            animate="show"
           >
             {actions.map((action) => {
               const Icon = action.icon;
               return (
-                <button
+                <motion.button
                   key={action.id}
                   type="button"
                   onClick={action.onClick}
                   title={action.label}
                   data-testid={`dashboard-quick-${action.id}`}
+                  variants={FADE_UP}
+                  whileHover={reduce ? undefined : PRESS_SOFT.whileHover}
+                  whileTap={reduce ? undefined : PRESS_SOFT.whileTap}
+                  transition={PRESS_SOFT.transition}
                   className={cn(
-                    "group inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/80 py-2 ps-2 pe-3.5 text-[12px] font-semibold text-zinc-700 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.35)] backdrop-blur transition-all duration-200",
-                    "hover:-translate-y-0.5 hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10",
+                    "group inline-flex items-center gap-2 rounded-full border border-zinc-200/80 bg-white/80 py-2 ps-2 pe-3.5 text-[12px] font-semibold text-zinc-700 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.35)] backdrop-blur",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10",
                   )}
                 >
                   <span
@@ -88,12 +103,12 @@ export function TodayBriefHero({
                     <Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
                   </span>
                   {action.label}
-                </button>
+                </motion.button>
               );
             })}
-          </nav>
+          </motion.nav>
         ) : null}
       </div>
-    </section>
+    </motion.section>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { ManagerTab } from "@/domain/catalog";
 import { navForTabs } from "@/lib/nav";
-import { PILL_SPRING } from "@/lib/motion";
+import { PILL_SPRING, PRESS_SOFT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import { TONE_FG, TONE_LIQUID } from "@/theme/tones";
@@ -20,6 +20,7 @@ export function ManagerAnimatedTabs({
   onChange: (tab: ManagerTab) => void;
 }) {
   const { t } = useLocale();
+  const reduce = useReducedMotion();
   const items = navForTabs(tabs);
 
   return (
@@ -33,7 +34,7 @@ export function ManagerAnimatedTabs({
         const Icon = tab.icon;
         const count = badges[tab.id] ?? 0;
         return (
-          <button
+          <motion.button
             key={tab.id}
             type="button"
             role="tab"
@@ -41,20 +42,29 @@ export function ManagerAnimatedTabs({
             aria-label={tab.label(t)}
             title={tab.label(t)}
             onClick={() => onChange(tab.id)}
-            className="relative flex min-w-[3.25rem] flex-1 shrink-0 items-center justify-center rounded-[20px] px-2.5 py-1.5 touch-manipulation transition-transform duration-200 ease-out active:scale-[0.94] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/15"
+            whileHover={reduce ? undefined : { scale: 1.04 }}
+            whileTap={reduce ? undefined : PRESS_SOFT.whileTap}
+            transition={PRESS_SOFT.transition}
+            className="relative flex min-w-[3.25rem] flex-1 shrink-0 items-center justify-center rounded-[20px] px-2.5 py-1.5 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/15"
           >
             {isActive ? (
               <motion.span
                 layoutId="manager-tab-liquid"
                 className={cn("ios-liquid-pill absolute inset-0 rounded-[20px]", TONE_LIQUID[tab.tone])}
-                transition={PILL_SPRING}
+                transition={reduce ? { duration: 0.01 } : PILL_SPRING}
               />
             ) : null}
             <span className="relative z-10 inline-flex items-center justify-center" aria-hidden>
-              <Icon
-                className={cn("h-[22px] w-[22px]", isActive ? TONE_FG[tab.tone] : "text-zinc-900/38")}
-                strokeWidth={isActive ? 1.85 : 1.55}
-              />
+              <motion.span
+                animate={{ scale: isActive ? 1.06 : 1 }}
+                transition={PILL_SPRING}
+                className="inline-flex"
+              >
+                <Icon
+                  className={cn("h-[22px] w-[22px]", isActive ? TONE_FG[tab.tone] : "text-zinc-900/38")}
+                  strokeWidth={isActive ? 1.85 : 1.55}
+                />
+              </motion.span>
               {count > 0 ? (
                 <span
                   className={cn(
@@ -66,7 +76,7 @@ export function ManagerAnimatedTabs({
                 </span>
               ) : null}
             </span>
-          </button>
+          </motion.button>
         );
       })}
     </div>
