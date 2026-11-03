@@ -240,9 +240,17 @@ function SettingsDetail({
   }
   if (pane === "team") {
     return (
-      <article className="space-y-6" data-testid="settings-detail-team">
+      <article className="space-y-5" data-testid="settings-detail-team">
         <IosNavBar backLabel={t.settings} onBack={() => onPane("root")} />
-        <DetailHeader icon={Users} tone="sky" title={t.tabTeam} description={t.settingsHintTeam} />
+        <header className="overflow-hidden rounded-[24px] border border-white/80 bg-gradient-to-br from-sky-50 via-white to-white p-4 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.35)] sm:p-5">
+          <div className="flex items-center gap-4">
+            <IosGlyph icon={Users} tone="sky" size="lg" />
+            <div className="min-w-0">
+              <h1 className="text-[26px] font-bold leading-tight tracking-tight text-zinc-950 sm:text-[28px]">{t.tabTeam}</h1>
+              <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-zinc-500">{t.settingsHintTeam}</p>
+            </div>
+          </div>
+        </header>
         <TeamTab session={session} />
       </article>
     );
