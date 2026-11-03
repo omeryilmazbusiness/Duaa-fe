@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import { TONE_FG, TONE_LIQUID } from "@/theme/tones";
 
+/**
+ * Compact left-aligned mobile tab strip — soft glass, icon-forward.
+ * Does not span the full viewport width.
+ */
 export function ManagerAnimatedTabs({
   tabs,
   active,
@@ -25,7 +29,7 @@ export function ManagerAnimatedTabs({
 
   return (
     <div
-      className="ios-liquid-track flex gap-0.5 overflow-x-auto rounded-[26px] p-1"
+      className="ios-liquid-track inline-flex max-w-full gap-0.5 overflow-x-auto rounded-[14px] p-0.5"
       style={{ scrollbarWidth: "none" }}
       role="tablist"
     >
@@ -45,31 +49,25 @@ export function ManagerAnimatedTabs({
             whileHover={reduce ? undefined : { scale: 1.04 }}
             whileTap={reduce ? undefined : PRESS_SOFT.whileTap}
             transition={PRESS_SOFT.transition}
-            className="relative flex min-w-[3.25rem] flex-1 shrink-0 items-center justify-center rounded-[20px] px-2.5 py-1.5 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/15"
+            className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-[11px] touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10"
           >
             {isActive ? (
               <motion.span
                 layoutId="manager-tab-liquid"
-                className={cn("ios-liquid-pill absolute inset-0 rounded-[20px]", TONE_LIQUID[tab.tone])}
+                className={cn("ios-liquid-pill absolute inset-0 rounded-[11px]", TONE_LIQUID[tab.tone])}
                 transition={reduce ? { duration: 0.01 } : PILL_SPRING}
               />
             ) : null}
             <span className="relative z-10 inline-flex items-center justify-center" aria-hidden>
-              <motion.span
-                animate={{ scale: isActive ? 1.06 : 1 }}
-                transition={PILL_SPRING}
-                className="inline-flex"
-              >
-                <Icon
-                  className={cn("h-[22px] w-[22px]", isActive ? TONE_FG[tab.tone] : "text-zinc-900/38")}
-                  strokeWidth={isActive ? 1.85 : 1.55}
-                />
-              </motion.span>
+              <Icon
+                className={cn("h-[17px] w-[17px]", isActive ? TONE_FG[tab.tone] : "text-zinc-700/70")}
+                strokeWidth={isActive ? 2.15 : 1.85}
+              />
               {count > 0 ? (
                 <span
                   className={cn(
-                    "absolute -end-2.5 -top-1.5 min-w-[13px] rounded-full px-1 py-px text-center font-mono text-[7px] font-bold leading-none",
-                    isActive ? "bg-zinc-950 text-white" : "bg-zinc-950/80 text-white",
+                    "absolute -end-1 -top-1 min-w-[12px] rounded-full px-0.5 py-px text-center font-mono text-[6.5px] font-bold leading-none",
+                    "border border-white/80 bg-zinc-900 text-white",
                   )}
                 >
                   {count > 99 ? "99+" : count}

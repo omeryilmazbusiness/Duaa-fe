@@ -91,8 +91,9 @@ export function ManagerDashboardHeader({
         }
       />
       {settingsChrome ? null : (
-        <div className="sticky top-14 z-10 bg-transparent lg:hidden">
-          <div className="px-3 pb-1.5 pt-1">
+        <div className="sticky top-14 z-10 lg:hidden">
+          <div className="pointer-events-none absolute inset-x-0 -top-1 h-8 bg-gradient-to-b from-white/65 to-transparent" aria-hidden />
+          <div className="relative flex justify-start px-3 pb-1.5 pt-1">
             <ManagerAnimatedTabs tabs={tabs} active={activeTab} badges={badges} onChange={onTabChange} />
           </div>
         </div>

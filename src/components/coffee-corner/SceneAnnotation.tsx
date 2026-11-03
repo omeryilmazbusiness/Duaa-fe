@@ -1,9 +1,7 @@
 "use client";
 
-import { Html } from "@react-three/drei";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import type { AnchorConfig } from "./anchors";
 import type { Severity } from "./types";
 
 const RING: Record<Severity, string> = {
@@ -17,71 +15,72 @@ const PING: Record<Severity, string> = {
   critical: "bg-rose-500/40",
 };
 
-/** Hairline leader: dark ink with a faint white halo so it reads on page *and* model. */
+/** Hairline leader: dark ink so it reads on page *and* model. */
 const LINE = "rgba(24,24,27,0.55)";
-
-/** Horizontal run before the card, so the line "lands" on the card edge. */
 const TAIL = 14;
 
+export interface ScreenAnchor {
+  readonly x: number;
+  readonly y: number;
+  readonly visible: boolean;
+}
+
 interface SceneAnnotationProps {
-  readonly anchor: AnchorConfig;
+  readonly screen: ScreenAnchor;
+  readonly offset: readonly [number, number];
   readonly severity: Severity;
-  readonly compact: boolean;
   readonly children: ReactNode;
 }
 
 /**
- * Bridges one 3D point to one screen-space card:
- *   • a pulsing marker exactly on the model coordinate,
- *   • an ultra-thin SVG leader line (non-scaling 1px stroke),
- *   • the popup, docked to the line's end.
- * Everything lives in a single zero-size `<Html>` so it tracks the camera for free.
+ * Screen-space annotation (DOM only — no drei `<Html>`).
+ * Position is the projected 3D point in canvas CSS pixels; offset docks the card.
  */
-export function SceneAnnotation({ anchor, severity, compact, children }: SceneAnnotationProps) {
-  const [dx, dy] = compact ? anchor.offsetCompact : anchor.offset;
+export function SceneAnnotation({ screen, offset, severity, children }: SceneAnnotationProps) {
+  if (!screen.visible) return null;
+
+  const [dx, dy] = offset;
   const side = dx >= 0 ? 1 : -1;
   const elbowX = dx - side * TAIL;
   const path = `M0 0 L${elbowX} ${dy} L${dx} ${dy}`;
 
   return (
-    <group position={anchor.position as [number, number, number]}>
-      <Html center zIndexRange={[30, 0]} style={{ pointerEvents: "none" }}>
-        <div className="relative h-0 w-0">
-          {/* marker */}
-          <span className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">
-            <span className={cn("absolute inset-0 -m-2 rounded-full cc-ping", PING[severity])} aria-hidden />
-            <span className={cn("block h-2 w-2 rounded-full ring-[1.5px] ring-white", RING[severity])} aria-hidden />
-          </span>
+    <div
+      className="pointer-events-none absolute left-0 top-0"
+      style={{ transform: `translate3d(${screen.x}px, ${screen.y}px, 0)` }}
+    >
+      <div className="relative h-0 w-0">
+        <span className="absolute left-0 top-0 -translate-x-1/2 -translate-y-1/2">
+          <span className={cn("absolute inset-0 -m-2 rounded-full cc-ping", PING[severity])} aria-hidden />
+          <span className={cn("block h-2 w-2 rounded-full ring-[1.5px] ring-white", RING[severity])} aria-hidden />
+        </span>
 
-          {/* leader line */}
-          <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" aria-hidden>
-            <path
-              d={path}
-              fill="none"
-              stroke={LINE}
-              strokeWidth="1"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-              pathLength={1}
-              className="cc-line"
-            />
-            <circle cx={dx} cy={dy} r="1.5" fill={LINE} />
-          </svg>
+        <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1" aria-hidden>
+          <path
+            d={path}
+            fill="none"
+            stroke={LINE}
+            strokeWidth="1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+            pathLength={1}
+            className="cc-line"
+          />
+          <circle cx={dx} cy={dy} r="1.5" fill={LINE} />
+        </svg>
 
-          {/* card */}
-          <div
-            className="absolute cc-card"
-            style={{
-              left: dx,
-              top: dy,
-              transform: side === 1 ? "translate(6px, -50%)" : "translate(calc(-100% - 6px), -50%)",
-            }}
-          >
-            {children}
-          </div>
+        <div
+          className="absolute cc-card"
+          style={{
+            left: dx,
+            top: dy,
+            transform: side === 1 ? "translate(6px, -50%)" : "translate(calc(-100% - 6px), -50%)",
+          }}
+        >
+          {children}
         </div>
-      </Html>
-    </group>
+      </div>
+    </div>
   );
 }

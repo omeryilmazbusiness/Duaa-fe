@@ -20,16 +20,16 @@ export const TONE_FILL: Record<Tone, string> = {
   zinc: "bg-gradient-to-br from-zinc-500 to-zinc-700 text-white",
 };
 
-/** Sliding liquid-glass pill tint for the selected manager tab. */
+/** Soft glass tint for the selected manager tab pill. */
 export const TONE_LIQUID: Record<Tone, string> = {
-  rose: "bg-gradient-to-b from-white/92 to-rose-100/70 shadow-[0_8px_22px_-10px_rgba(225,29,72,0.42)]",
-  amber: "bg-gradient-to-b from-white/92 to-amber-100/70 shadow-[0_8px_22px_-10px_rgba(217,119,6,0.42)]",
-  sky: "bg-gradient-to-b from-white/92 to-sky-100/70 shadow-[0_8px_22px_-10px_rgba(2,132,199,0.42)]",
-  emerald: "bg-gradient-to-b from-white/92 to-emerald-100/70 shadow-[0_8px_22px_-10px_rgba(5,150,105,0.42)]",
-  violet: "bg-gradient-to-b from-white/92 to-violet-100/70 shadow-[0_8px_22px_-10px_rgba(124,58,237,0.42)]",
-  indigo: "bg-gradient-to-b from-white/92 to-indigo-100/70 shadow-[0_8px_22px_-10px_rgba(79,70,229,0.42)]",
-  teal: "bg-gradient-to-b from-white/92 to-teal-100/70 shadow-[0_8px_22px_-10px_rgba(13,148,136,0.42)]",
-  zinc: "bg-gradient-to-b from-white/92 to-zinc-100/70 shadow-[0_8px_22px_-10px_rgba(24,24,27,0.28)]",
+  rose: "bg-gradient-to-b from-white/88 to-rose-50/75",
+  amber: "bg-gradient-to-b from-white/88 to-amber-50/75",
+  sky: "bg-gradient-to-b from-white/88 to-sky-50/75",
+  emerald: "bg-gradient-to-b from-white/88 to-emerald-50/75",
+  violet: "bg-gradient-to-b from-white/88 to-violet-50/75",
+  indigo: "bg-gradient-to-b from-white/88 to-indigo-50/75",
+  teal: "bg-gradient-to-b from-white/88 to-teal-50/75",
+  zinc: "bg-gradient-to-b from-white/88 to-zinc-50/70",
 };
 
 /** Idle tab / sidebar glyph color. */
