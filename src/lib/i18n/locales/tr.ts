@@ -51,6 +51,7 @@ export const tr: Messages = {
   ccStock: "Stok",
   ccRequests: "Talepler",
   ccFaults: "Arızalar",
+  ccStockNoFeed: "Atık verisi yok",
   ccAllClear: "Her şey yolunda",
   ccLowest: "en düşük",
   ccWaiting: "bekliyor",

@@ -125,7 +125,9 @@ export default function CoffeeCornerScene({ models, onReady }: CoffeeCornerScene
       // Static camera most of the time → render only on demand (controls/resizes invalidate).
       frameloop="demand"
       dpr={[1, 1.75]}
-      gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
+      gl={{ antialias: true, powerPreference: "high-performance", alpha: true, premultipliedAlpha: true }}
+      // Fully transparent canvas: the page shows through, no frame, no backdrop.
+      onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       style={{ background: "transparent" }}
     >
       <FittedCamera />

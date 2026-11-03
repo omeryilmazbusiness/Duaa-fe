@@ -19,9 +19,9 @@ export const MODEL_URL = "/models/StockCake-3d-generator-Cozy_Coffee_Corner-3331
 
 export const ANCHORS: readonly AnchorConfig[] = [
   // Dry-goods shelves on the left wall.
-  { id: "stock", position: [-0.333, 0.172, 0.039], offset: [-110, -20], offsetCompact: [-22, -34] },
+  { id: "stock", position: [-0.333, 0.172, 0.039], offset: [-110, -30], offsetCompact: [-22, -34] },
   // Espresso machine on the left counter.
-  { id: "faults", position: [-0.234, 0.06, 0.143], offset: [-110, 85], offsetCompact: [-38, 26] },
+  { id: "faults", position: [-0.234, 0.06, 0.143], offset: [-110, 115], offsetCompact: [-38, 26] },
   // Order / hand-off point on the front counter.
   { id: "requests", position: [0.264, -0.03, 0.022], offset: [140, -10], offsetCompact: [40, 22] },
 ];

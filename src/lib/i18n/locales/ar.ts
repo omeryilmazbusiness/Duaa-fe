@@ -51,6 +51,7 @@ export const ar: Messages = {
   ccStock: "المخزون",
   ccRequests: "الطلبات",
   ccFaults: "الأعطال",
+  ccStockNoFeed: "لا تتوفر بيانات الهدر",
   ccAllClear: "كل شيء بخير",
   ccLowest: "الأقل",
   ccWaiting: "بالانتظار",

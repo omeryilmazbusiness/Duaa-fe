@@ -49,6 +49,7 @@ export const en = {
   ccStock: "Stock",
   ccRequests: "Requests",
   ccFaults: "Faults",
+  ccStockNoFeed: "No supply data",
   ccAllClear: "All clear",
   ccLowest: "lowest",
   ccWaiting: "waiting",

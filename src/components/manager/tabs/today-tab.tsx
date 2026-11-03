@@ -164,7 +164,7 @@ export function TodayTab({
         ]}
       />
 
-      <TodaysFocusWidget />
+      <TodaysFocusWidget workspaceId={workspaceId} />
 
       <FloorChipRail>
         {floor.map((kpi) => (
