@@ -281,6 +281,192 @@ html:has(.night-aurora) body {
   }
 }
 
+/* Decide.Act cinematic card field */
+@keyframes decide-ai-cinema {
+  0%,
+  100% {
+    opacity: 1;
+    background:
+      radial-gradient(ellipse 70% 55% at 12% -10%, rgba(52, 211, 153, 0.22), transparent 55%),
+      radial-gradient(ellipse 55% 50% at 88% 8%, rgba(56, 189, 248, 0.18), transparent 52%),
+      radial-gradient(ellipse 50% 45% at 70% 110%, rgba(139, 92, 246, 0.16), transparent 50%),
+      radial-gradient(ellipse 40% 35% at 40% 60%, rgba(16, 185, 129, 0.08), transparent 60%);
+  }
+  40% {
+    opacity: 1;
+    background:
+      radial-gradient(ellipse 65% 50% at 18% 0%, rgba(56, 189, 248, 0.2), transparent 55%),
+      radial-gradient(ellipse 60% 55% at 92% 20%, rgba(167, 139, 250, 0.2), transparent 52%),
+      radial-gradient(ellipse 55% 50% at 55% 105%, rgba(52, 211, 153, 0.2), transparent 48%),
+      radial-gradient(ellipse 35% 30% at 30% 50%, rgba(34, 211, 238, 0.1), transparent 60%);
+  }
+  70% {
+    opacity: 1;
+    background:
+      radial-gradient(ellipse 60% 48% at 8% 15%, rgba(16, 185, 129, 0.18), transparent 55%),
+      radial-gradient(ellipse 50% 45% at 80% -5%, rgba(45, 212, 191, 0.16), transparent 50%),
+      radial-gradient(ellipse 55% 50% at 95% 85%, rgba(99, 102, 241, 0.18), transparent 50%),
+      radial-gradient(ellipse 40% 35% at 45% 70%, rgba(52, 211, 153, 0.12), transparent 60%);
+  }
+}
+
+@keyframes decide-ai-sheen {
+  0% {
+    transform: translateX(-30%) skewX(-12deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.35;
+  }
+  42% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateX(40%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes decide-ai-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+@keyframes decide-ai-orb-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.decide-ai-cinema {
+  animation: decide-ai-cinema 14s ease-in-out infinite;
+}
+
+.decide-ai-sheen {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.07) 48%,
+    rgba(52, 211, 153, 0.1) 52%,
+    transparent 68%
+  );
+  animation: decide-ai-sheen 7.5s ease-in-out infinite;
+}
+
+.decide-ai-caret {
+  animation: decide-ai-caret 0.9s steps(1) infinite;
+}
+
+.decide-ai-orb-glow {
+  animation: decide-ai-orb-glow 4.8s ease-in-out infinite;
+}
+
+/* Decide.Act dark AI field — continuous 3D mesh motion. */
+@keyframes decide-ai-orbit {
+  from {
+    transform: rotateX(62deg) rotateZ(0deg);
+  }
+  to {
+    transform: rotateX(62deg) rotateZ(360deg);
+  }
+}
+
+@keyframes decide-ai-orbit-rev {
+  from {
+    transform: rotateX(62deg) rotateZ(360deg);
+  }
+  to {
+    transform: rotateX(62deg) rotateZ(0deg);
+  }
+}
+
+@keyframes decide-ai-dash {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+@keyframes decide-ai-node {
+  0%,
+  100% {
+    opacity: 0.45;
+    r: 2.8;
+  }
+  50% {
+    opacity: 1;
+    r: 4.4;
+  }
+}
+
+@keyframes decide-ai-tilt {
+  0%,
+  100% {
+    transform: rotateX(18deg) rotateY(-16deg) translateZ(0);
+  }
+  50% {
+    transform: rotateX(22deg) rotateY(14deg) translateZ(12px);
+  }
+}
+
+@keyframes decide-ai-draw {
+  0% {
+    opacity: 0.45;
+    filter: brightness(0.9);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+  100% {
+    opacity: 0.55;
+    filter: brightness(1);
+  }
+}
+
+.decide-ai-orbit,
+.decide-ai-orbit-rev {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotateX(62deg);
+}
+
+.decide-ai-orbit {
+  animation: decide-ai-orbit 14s linear infinite;
+}
+
+.decide-ai-orbit-rev {
+  animation: decide-ai-orbit-rev 10s linear infinite;
+}
+
+.decide-ai-dash {
+  animation: decide-ai-dash 2.4s linear infinite;
+}
+
+.decide-ai-node {
+  animation: decide-ai-node 2.2s ease-in-out infinite;
+}
+
+.decide-ai-tilt {
+  transform-style: preserve-3d;
+  animation: decide-ai-tilt 8s ease-in-out infinite;
+}
+
+.decide-ai-draw {
+  animation: decide-ai-draw 3.6s ease-in-out infinite;
+}
+
 @keyframes setup-stage-fade {
   from {
     opacity: 0;
@@ -297,7 +483,17 @@ html:has(.night-aurora) body {
     animation-duration: 200ms;
   }
   .liquid-glass-text,
-  .night-aurora {
+  .night-aurora,
+  .decide-ai-cinema,
+  .decide-ai-sheen,
+  .decide-ai-caret,
+  .decide-ai-orb-glow,
+  .decide-ai-orbit,
+  .decide-ai-orbit-rev,
+  .decide-ai-dash,
+  .decide-ai-node,
+  .decide-ai-tilt,
+  .decide-ai-draw {
     animation: none;
   }
 }

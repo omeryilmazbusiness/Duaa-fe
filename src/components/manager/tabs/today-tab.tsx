@@ -124,6 +124,17 @@ export function TodayTab({
   }
 
   const headline = brief.data ? composeHeadline(t, brief.data) : t.todayKicker;
+  const urgent =
+    cards.find((c) => c.severity === "high") ??
+    cards.find((c) => c.kind === "late_staff") ??
+    cards[0];
+  const actTarget = (urgent?.targetTab as ManagerTab | undefined) ?? "ops";
+  const actHint =
+    cards.length === 0
+      ? undefined
+      : cards.length === 1
+        ? t.todayActNowOne
+        : t.todayActNowHint.replace("{n}", String(cards.length));
 
   return (
     <div className="space-y-4" data-testid="today-board">
@@ -131,6 +142,18 @@ export function TodayTab({
         kicker={t.todayKicker}
         summary={brief.data ? headline : t.allClear}
         detail={brief.data ? `${session.workspace.name} · ${t.tabToday}` : t.todaySubtitle}
+        primaryAction={
+          urgent
+            ? {
+                label: t.todayActNow,
+                hint: actHint,
+                onClick: () => {
+                  run(urgent, "acknowledge");
+                  onOpenTab(actTarget);
+                },
+              }
+            : null
+        }
         actions={[
           { id: "ops", label: t.tabOps, icon: ListTodo, tone: "amber", onClick: () => onOpenTab("ops") },
           { id: "dashboard", label: t.tabDashboard, icon: LayoutGrid, tone: "teal", onClick: () => onOpenTab("dashboard") },
