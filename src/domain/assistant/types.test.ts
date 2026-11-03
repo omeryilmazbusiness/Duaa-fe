@@ -53,7 +53,7 @@ describe("assistant chat rules", () => {
   it("categorises backend error codes", () => {
     expect(assistantErrorKind("ai_daily_limit")).toBe("limit");
     expect(assistantErrorKind("ai_key_rejected")).toBe("key");
-    expect(assistantErrorKind("ai_provider_timeout")).toBe("provider");
+    expect(assistantErrorKind("ai_provider_timeout")).toBe("warming");
     expect(assistantErrorKind("ai_not_configured")).toBe("not_configured");
     expect(assistantErrorKind("whatever")).toBe("generic");
   });

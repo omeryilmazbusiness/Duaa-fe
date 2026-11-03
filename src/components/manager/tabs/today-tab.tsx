@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Banknote, CheckCircle2, ClipboardCheck, ClipboardList, Clock3, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import { DashboardCommandBar } from "@/components/dashboard/command-bar";
+import { FloorChip, FloorChipRail } from "@/components/dashboard/floor-chip";
 import { MetricTile } from "@/components/dashboard/metric-tile";
 import { StatTile } from "@/components/dashboard/stat-tile";
+import { TodayBriefHero } from "@/components/dashboard/today-brief-hero";
 import { WidgetCard } from "@/components/dashboard/widget-card";
 import { CafePrepCard } from "@/components/manager/cafe-prep-card";
 import { DecisionCard } from "@/components/manager/decision-card";
@@ -90,6 +91,9 @@ export function TodayTab({
     waitingPrep: 0,
     readyPrep: 0,
     servedPrep: 0,
+    wasteTickets: 0,
+    wasteGrams: 0,
+    wasteCost: 0,
   };
   const kpis = todayKpis(pulse);
   const floor = floorKpis(pulse);
@@ -122,15 +126,11 @@ export function TodayTab({
   const headline = brief.data ? composeHeadline(t, brief.data) : t.todayKicker;
 
   return (
-    <div className="space-y-5" data-testid="today-board">
-      <header className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{t.tabToday}</h1>
-        <p className="max-w-2xl text-sm font-medium text-zinc-500">{brief.data ? headline : t.todaySubtitle}</p>
-      </header>
-
-      <DashboardCommandBar
-        title={t.todayKicker}
-        hint={`${session.workspace.name} · ${headline}`}
+    <div className="space-y-4" data-testid="today-board">
+      <TodayBriefHero
+        kicker={t.todayKicker}
+        summary={brief.data ? headline : t.allClear}
+        detail={brief.data ? `${session.workspace.name} · ${t.tabToday}` : t.todaySubtitle}
         actions={[
           { id: "ops", label: t.tabOps, icon: ListTodo, tone: "amber", onClick: () => onOpenTab("ops") },
           { id: "dashboard", label: t.tabDashboard, icon: LayoutGrid, tone: "teal", onClick: () => onOpenTab("dashboard") },
@@ -140,7 +140,21 @@ export function TodayTab({
         ]}
       />
 
-      <div className="grid grid-cols-3 gap-3 lg:gap-4" data-testid="today-kpis">
+      <FloorChipRail>
+        {floor.map((kpi) => (
+          <FloorChip
+            key={kpi.id}
+            label={t[kpi.labelKey]}
+            tone={kpi.tone}
+            icon={KPI_ICON[kpi.id] ?? ListTodo}
+            active={kpi.value > 0}
+            onClick={kpi.id === "prep" ? undefined : session.tabs.includes("feedback") ? () => onOpenTab("feedback") : undefined}
+            testId={`today-floor-${kpi.id}`}
+          />
+        ))}
+      </FloorChipRail>
+
+      <div className="grid grid-cols-3 gap-2.5 lg:gap-3" data-testid="today-kpis">
         {kpis.map((kpi) => (
           <StatTile
             key={kpi.id}
@@ -148,23 +162,9 @@ export function TodayTab({
             value={kpi.value}
             tone={kpi.tone}
             icon={KPI_ICON[kpi.id] ?? ListTodo}
+            compact
             onClick={kpi.id === "done" ? undefined : () => onOpenTab("ops")}
             testId={`today-kpi-${kpi.id}`}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6 lg:gap-4" data-testid="today-floor">
-        {floor.map((kpi) => (
-          <StatTile
-            key={kpi.id}
-            label={t[kpi.labelKey]}
-            value={kpi.value}
-            caption={kpi.captionKey ? t[kpi.captionKey] : undefined}
-            tone={kpi.tone}
-            icon={KPI_ICON[kpi.id] ?? ListTodo}
-            onClick={kpi.id === "prep" ? undefined : session.tabs.includes("feedback") ? () => onOpenTab("feedback") : undefined}
-            testId={`today-floor-${kpi.id}`}
           />
         ))}
       </div>

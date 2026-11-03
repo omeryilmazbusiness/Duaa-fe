@@ -37,6 +37,17 @@ export interface DashboardSales {
   closedAt?: string;
 }
 
+export interface DashboardWaste {
+  status: TileStatus;
+  reasonKey?: string;
+  businessDate: string;
+  ticketCount: number;
+  grams: number;
+  cost: number;
+  kitchenGrams: number;
+  barGrams: number;
+}
+
 export interface DashboardCash {
   status: TileStatus;
   reasonKey?: string;
@@ -74,6 +85,7 @@ export interface DashboardView {
   tiles: DashboardTile[];
   cash?: DashboardCash;
   sales?: DashboardSales;
+  waste?: DashboardWaste;
   approvals?: DashboardApproval[];
   workload: WorkloadRow[];
 }
@@ -82,7 +94,7 @@ export function isLiveTile(tile: DashboardTile): boolean {
   return tile.status === "live";
 }
 
-/** Waste and occupancy stay missing until their adapters exist. Sales go live only from recorded tickets. */
+/** Occupancy stays missing until its adapter exists. Sales and waste go live only from recorded tickets. */
 export function isBoundSource(tile: DashboardTile): boolean {
-  return tile.module === "waste" || tile.module === "occupancy";
+  return tile.module === "occupancy";
 }

@@ -60,7 +60,8 @@ export type SourceCopyKey =
   | "sourceBreakdown"
   | "sourceDailyClose"
   | "sourceChecklist"
-  | "sourcePrep";
+  | "sourcePrep"
+  | "sourceWaste";
 
 export function todayKpis(pulse: BriefView["pulse"]): Array<TodayKpiSpec & { value: number }> {
   return TODAY_KPIS.map((spec) => ({ ...spec, value: pulse[spec.valueKey] }));
@@ -218,6 +219,8 @@ export function sourceCopyKey(kind: string): SourceCopyKey | null {
       return "sourceChecklist";
     case "prep_time":
       return "sourcePrep";
+    case "waste":
+      return "sourceWaste";
     default:
       return null;
   }

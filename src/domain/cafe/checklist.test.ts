@@ -15,7 +15,7 @@ describe("cafe checklist", () => {
       toChecklistSave([
         { kind: "open", title: "  " },
         { kind: "open", title: "chairs down" },
-        { kind: "close" as "close", title: "safe locked" },
+        { kind: "close", title: "safe locked" },
       ]),
     ).toEqual([
       { id: undefined, kind: "open", title: "chairs down", active: undefined },

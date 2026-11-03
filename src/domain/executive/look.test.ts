@@ -18,6 +18,9 @@ const emptyPulse = {
   waitingPrep: 0,
   readyPrep: 0,
   servedPrep: 0,
+  wasteTickets: 0,
+  wasteGrams: 0,
+  wasteCost: 0,
 };
 
 function brief(over: Partial<BriefView> = {}): BriefView {
@@ -98,6 +101,7 @@ describe("today look", () => {
     expect(sourceCopyKey("cash_variance")).toBe("sourceCash");
     expect(sourceCopyKey("handover")).toBe("sourceHandover");
     expect(sourceCopyKey("prep_time")).toBe("sourcePrep");
+    expect(sourceCopyKey("waste")).toBe("sourceWaste");
     expect(cardTitleKey("brief.prepWaiting")).toBe("prepWaiting");
     expect(cardTone("prep_time")).toBe("amber");
     expect(cardDisplayValue({ kind: "cash_variance", detail: "-2000", count: 1 } as never)).toEqual({ kind: "cash", value: -2000 });

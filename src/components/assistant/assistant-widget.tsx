@@ -23,14 +23,104 @@ const ERROR_COPY: Record<AssistantErrorKind, keyof Messages> = {
   key: "aiErrKey",
   provider: "aiErrProvider",
   not_configured: "aiErrNotConfigured",
+  warming: "aiWarmingBody",
   generic: "aiErrGeneric",
 };
 
-/** Floating DUAA AI assistant. Renders only for the GM once a key is configured. */
+/** Floating DUAA AI — always on the right for the GM. Chat opens only when available. */
 export function AssistantWidget({ session }: { session: SessionPayload }) {
   const status = useAssistantStatus(session);
-  if (session.scope !== "general_manager" || !status.data?.available) return null;
-  return <Assistant session={session} usage={status.data.usage} />;
+  if (session.scope !== "general_manager") return null;
+  if (status.data?.available) {
+    return <Assistant session={session} usage={status.data.usage} />;
+  }
+  return <AssistantWarming />;
+}
+
+/** Key not set yet: keep the launcher, never surface a configuration error. */
+function AssistantWarming() {
+  const { t } = useLocale();
+  const reduceMotion = useReducedMotion();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  return (
+    <>
+      <AnimatePresence>
+        {!open ? (
+          <motion.button
+            key="launcher-warm"
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label={t.aiOpen}
+            data-testid="ai-launcher"
+            initial={{ opacity: 0, y: 12, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.96 }}
+            whileHover={reduceMotion ? undefined : { y: -2 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+            className="duaa-ai-ring fixed bottom-5 end-5 z-50 inline-flex h-12 items-center gap-2 rounded-full ps-3 pe-4 shadow-[0_12px_40px_-12px_rgba(124,58,237,0.55)] outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40"
+          >
+            <AiMark />
+            <span className="duaa-ai-text text-[13px] font-semibold tracking-[0.14em]">{t.aiName}</span>
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {open ? (
+          <motion.section
+            key="panel-warm"
+            role="dialog"
+            aria-label={t.aiName}
+            data-testid="ai-panel-warming"
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className="fixed inset-x-3 bottom-3 z-50 flex max-h-[min(420px,calc(100dvh-1.5rem))] flex-col overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white shadow-[0_30px_80px_-24px_rgba(76,29,149,0.45)] sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[400px]"
+          >
+            <header className="relative flex items-center gap-3 px-5 pb-3 pt-4">
+              <AiMark className="h-9 w-9" />
+              <div className="min-w-0 flex-1">
+                <p className="duaa-ai-text text-[15px] font-semibold tracking-[0.14em]">{t.aiName}</p>
+                <p className="truncate text-[11px] text-zinc-500">{t.aiWarmingTagline}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={t.aiClose}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+
+            <div className="relative flex flex-1 flex-col items-center justify-center gap-4 px-6 pb-8 pt-2 text-center">
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/30">
+                <Sparkles className="h-6 w-6" strokeWidth={1.8} />
+              </span>
+              <p
+                role="status"
+                data-testid="ai-warming-message"
+                className="rounded-2xl bg-orange-50 px-4 py-3 text-[13.5px] leading-snug text-orange-800 ring-1 ring-orange-200/80"
+              >
+                {t.aiWarmingBody}
+              </p>
+            </div>
+          </motion.section>
+        ) : null}
+      </AnimatePresence>
+    </>
+  );
 }
 
 function Assistant({ session, usage }: { session: SessionPayload; usage: AssistantUsage }) {
@@ -209,7 +299,16 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
               )}
               {chat.pending ? <Thinking label={t.aiThinking} /> : null}
               {chat.error ? (
-                <p role="alert" className="rounded-2xl bg-rose-50 px-3.5 py-2.5 text-[12.5px] leading-snug text-rose-800">
+                <p
+                  role="status"
+                  data-testid={chat.error === "warming" ? "ai-warming-message" : "ai-error"}
+                  className={cn(
+                    "rounded-2xl px-3.5 py-2.5 text-[12.5px] leading-snug ring-1",
+                    chat.error === "warming"
+                      ? "bg-orange-50 text-orange-800 ring-orange-200/80"
+                      : "bg-rose-50 text-rose-800 ring-rose-200/60",
+                  )}
+                >
                   {t[ERROR_COPY[chat.error]]}
                 </p>
               ) : null}

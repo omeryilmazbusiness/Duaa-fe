@@ -11,6 +11,7 @@ import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definitio
 import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
 import type { POSDay, POSTicketDraft } from "@/domain/cafe/pos";
 import type { PrepDay, PrepTicketDraft } from "@/domain/cafe/prep";
+import type { RecipeDraft, WasteDay, WasteTicketDraft } from "@/domain/cafe/waste";
 import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
 import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
@@ -30,6 +31,7 @@ import {
   mapCafeChecklist,
   mapPOSDay,
   mapPrepDay,
+  mapWasteDay,
   mapCafeHandover,
   mapCafeIntake,
   mapCafeQRCode,
@@ -326,10 +328,12 @@ export class HttpKernelApi implements KernelApi {
     workspaceId: string,
     input: { messages: { role: ChatRole; content: string }[]; locale: string },
   ): Promise<ChatReply> {
+    // Cap wait so a slow provider never parks the GM; UI maps timeout to the warming copy.
     return this.http
       .request(`/v1/workspaces/${workspaceId}/assistant/chat`, {
         method: "POST",
         body: JSON.stringify(input),
+        signal: AbortSignal.timeout(10_000),
       })
       .then(mapChatReply);
   }
@@ -508,5 +512,28 @@ export class HttpKernelApi implements KernelApi {
     return this.http
       .request(`/v1/workspaces/${workspaceId}/cafe/prep/${ticketId}/serve`, { method: "POST" })
       .then(mapPrepDay);
+  }
+
+  getCafeWaste(workspaceId: string, date?: string): Promise<WasteDay> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/workspaces/${workspaceId}/cafe/waste${q}`).then(mapWasteDay);
+  }
+
+  recordCafeWaste(workspaceId: string, input: WasteTicketDraft): Promise<WasteDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/waste/tickets`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapWasteDay);
+  }
+
+  saveCafeRecipes(workspaceId: string, recipes: RecipeDraft[]): Promise<WasteDay> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/cafe/waste/recipes`, {
+        method: "PUT",
+        body: JSON.stringify({ recipes }),
+      })
+      .then(mapWasteDay);
   }
 }

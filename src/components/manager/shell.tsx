@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ManagerTab } from "@/domain/catalog";
 import { resolveActiveTab, managerGuard, postLoginPath } from "@/domain/staff-scope";
+import { readSetupLater, setupPath } from "@/domain/cafe/setup";
 import { AssistantWidget } from "@/components/assistant/assistant-widget";
 import { ManagerDashboardHeader } from "@/components/manager/header";
 import { ManagerDesktopSidebar } from "@/components/manager/sidebar";
@@ -37,6 +38,25 @@ export function ManagerShell({ slug }: { slug: string }) {
       router.replace(postLoginPath({ slug: session.workspace.slug, surface: "staff_portal" }));
     }
   }, [isLoading, isAuthenticated, session, router, slug]);
+
+  const cafeDef = useQuery({
+    queryKey: qk.cafeDefinition(session?.workspace.id ?? ""),
+    queryFn: () => kernel.getCafeDefinition(session!.workspace.id),
+    enabled:
+      !!session &&
+      session.scope === "general_manager" &&
+      session.workspace.kind === "cafe",
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (!session || session.scope !== "general_manager" || session.workspace.kind !== "cafe") return;
+    if (!cafeDef.data) return;
+    if (cafeDef.data.completeness.readyForReviews) return;
+    if (readSetupLater(session.workspace.id)) return;
+    router.replace(setupPath(session.workspace.slug || slug));
+  }, [session, cafeDef.data, router, slug]);
 
   const tabs = session?.tabs ?? [];
   const urlSettings = params.get("view") === "settings";
@@ -96,7 +116,14 @@ export function ManagerShell({ slug }: { slug: string }) {
     };
   }, [brief.data, reports.data]);
 
-  if (isLoading || !session) {
+  const workshopGatePending =
+    !!session &&
+    session.scope === "general_manager" &&
+    session.workspace.kind === "cafe" &&
+    cafeDef.isPending &&
+    !readSetupLater(session.workspace.id);
+
+  if (isLoading || !session || workshopGatePending) {
     return (
       <div className="ios-canvas flex min-h-dvh items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-zinc-300" />

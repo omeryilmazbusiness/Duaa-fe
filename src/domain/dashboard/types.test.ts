@@ -10,8 +10,9 @@ describe("dashboard tiles", () => {
       value: 0,
       labelKey: "sales",
     };
-    expect(isBoundSource(sales)).toBe(true);
+    expect(isBoundSource(sales)).toBe(false);
     expect(isLiveTile(sales)).toBe(false);
+    expect(isBoundSource({ module: "occupancy", status: "unavailable", value: 0, labelKey: "occupancy" })).toBe(true);
   });
 
   it("lets a closed till become live", () => {

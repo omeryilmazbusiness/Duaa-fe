@@ -9,6 +9,7 @@ export function StatTile({
   icon: Icon,
   tone = "sky",
   caption,
+  compact,
   onClick,
   testId,
 }: {
@@ -17,21 +18,32 @@ export function StatTile({
   icon: LucideIcon;
   tone?: Tone;
   caption?: string;
+  compact?: boolean;
   onClick?: () => void;
   testId?: string;
 }) {
   const shell = cn(
-    "ios-fill-sheen group flex h-full min-h-[148px] flex-col justify-between rounded-[28px] p-5 transition-all duration-300",
+    "ios-fill-sheen group flex h-full flex-col justify-between transition-all duration-300",
     TONE_FILL[tone],
+    compact ? "min-h-[96px] rounded-[22px] p-3.5" : "min-h-[148px] rounded-[28px] p-5",
     onClick &&
       "hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
   );
   const body = (
     <>
-      <IconWell icon={Icon} size="lg" />
-      <div className="mt-4 min-w-0">
-        <p className="truncate text-[34px] font-semibold leading-none tracking-tight tabular-nums text-white">{value}</p>
-        <p className="mt-2 truncate text-[13px] font-medium text-white/75">{label}</p>
+      <IconWell icon={Icon} size={compact ? "sm" : "lg"} />
+      <div className={cn("min-w-0", compact ? "mt-2.5" : "mt-4")}>
+        <p
+          className={cn(
+            "truncate font-semibold leading-none tracking-tight tabular-nums text-white",
+            compact ? "text-[26px]" : "text-[34px]",
+          )}
+        >
+          {value}
+        </p>
+        <p className={cn("truncate font-medium text-white/75", compact ? "mt-1.5 text-[12px]" : "mt-2 text-[13px]")}>
+          {label}
+        </p>
         {caption ? <p className="mt-0.5 truncate text-[11px] font-medium text-white/60">{caption}</p> : null}
       </div>
     </>

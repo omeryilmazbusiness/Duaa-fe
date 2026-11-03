@@ -39,7 +39,7 @@ describe("dashboard look", () => {
     const sources = sourceTiles(tiles);
     expect(sources.map((tile) => tile.module)).toEqual(["sales", "cash", "waste"]);
     expect(isBoundSource(sources[0]!)).toBe(false);
-    expect(isBoundSource(sources[2]!)).toBe(true);
+    expect(isBoundSource(sources[2]!)).toBe(false);
     expect(isLiveTile(sources[0]!)).toBe(false);
     expect(tileTone(sources[0]!)).toBe("zinc");
     expect(tileTone(sources[1]!)).toBe("rose");

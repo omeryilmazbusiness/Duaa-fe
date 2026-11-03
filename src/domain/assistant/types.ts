@@ -98,7 +98,7 @@ export function usageRatio(usage: AssistantUsage): number {
   return Math.min(1, Math.max(0, usage.used / usage.limit));
 }
 
-export type AssistantErrorKind = "limit" | "key" | "provider" | "not_configured" | "generic";
+export type AssistantErrorKind = "limit" | "key" | "provider" | "not_configured" | "warming" | "generic";
 
 /** Maps a backend error code to a UI category so copy stays localised. */
 export function assistantErrorKind(code: string): AssistantErrorKind {
@@ -112,13 +112,14 @@ export function assistantErrorKind(code: string): AssistantErrorKind {
       return "key";
     case "ai_not_configured":
       return "not_configured";
+    case "ai_provider_timeout":
+      return "warming";
     case "ai_model_not_found":
     case "ai_request_rejected":
     case "ai_region_blocked":
     case "ai_provider_rate_limited":
     case "ai_provider_unavailable":
     case "ai_provider_unreachable":
-    case "ai_provider_timeout":
     case "ai_provider_bad_response":
     case "ai_empty_response":
       return "provider";

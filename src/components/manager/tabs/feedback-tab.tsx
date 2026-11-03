@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck, ClipboardList, Handshake, LayoutGrid, ListTodo, MessageSquare, QrCode, Wrench } from "lucide-react";
 import { CafeChecklistCard } from "@/components/manager/cafe-checklist-card";
+import { CafeWasteCard } from "@/components/manager/cafe-waste-card";
 import { CafeHandoverCard } from "@/components/manager/cafe-handover-card";
 import { CafeIntakeCard } from "@/components/manager/cafe-intake-card";
 import { ReportInbox } from "@/components/manager/report-inbox";
@@ -113,6 +114,7 @@ export function FeedbackTab({
         <WidgetCard title={t.checkTitle} icon={ClipboardList} tone="indigo" testId="feedback-checklist">
           <CafeChecklistCard workspaceId={workspaceId} />
         </WidgetCard>
+        <CafeWasteCard workspaceId={workspaceId} />
       </div>
 
       <WidgetCard title={t.qrDesk} icon={QrCode} tone="indigo" testId="feedback-qr">

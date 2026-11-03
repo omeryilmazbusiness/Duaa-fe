@@ -23,6 +23,7 @@ import {
 import type { CafeCheckLine, CafeChecklist, CheckKind } from "@/domain/cafe/checklist";
 import type { POSDay, POSTender, POSTicket, POSTicketKind } from "@/domain/cafe/pos";
 import type { PrepDay, PrepStation, PrepStatus, PrepTicket } from "@/domain/cafe/prep";
+import type { Recipe, WasteDay, WasteReason, WasteStation, WasteTicket } from "@/domain/cafe/waste";
 import { isCheckKind } from "@/domain/cafe/checklist";
 import type { CafeHandover, CafeHandoverRef } from "@/domain/cafe/handover";
 import type { CafeIntake } from "@/domain/cafe/intake";
@@ -34,6 +35,7 @@ import type {
   DashboardSales,
   DashboardTile,
   DashboardView,
+  DashboardWaste,
   TileStatus,
   WorkloadRow,
 } from "@/domain/dashboard/types";
@@ -209,6 +211,9 @@ export function mapBrief(raw: unknown): BriefView {
       waitingPrep: num(pulse.waitingPrep),
       readyPrep: num(pulse.readyPrep),
       servedPrep: num(pulse.servedPrep),
+      wasteTickets: num(pulse.wasteTickets),
+      wasteGrams: num(pulse.wasteGrams),
+      wasteCost: num(pulse.wasteCost),
     },
     cards: cards.map(mapCard),
     sources: sources.map((item) => {
@@ -322,6 +327,7 @@ export function mapDashboard(raw: unknown): DashboardView {
     tiles: mapList(r.tiles, mapTile),
     cash: cashRaw ? mapCash(cashRaw) : undefined,
     sales: r.sales && typeof r.sales === "object" ? mapDashSales(r.sales as Record<string, unknown>) : undefined,
+    waste: r.waste && typeof r.waste === "object" ? mapDashWaste(r.waste as Record<string, unknown>) : undefined,
     approvals: Array.isArray(r.approvals) ? r.approvals.map(mapDashApproval) : undefined,
     workload: mapList(r.workload, mapWorkload),
   };
@@ -356,6 +362,19 @@ function mapDashSales(r: Record<string, unknown>): DashboardSales {
     other: num(r.other),
     closed: bool(r.closed),
     closedAt: str(r.closedAt) || undefined,
+  };
+}
+
+function mapDashWaste(r: Record<string, unknown>): DashboardWaste {
+  return {
+    status: asTileStatus(r.status),
+    reasonKey: str(r.reasonKey) || undefined,
+    businessDate: str(r.businessDate),
+    ticketCount: num(r.ticketCount),
+    grams: num(r.grams),
+    cost: num(r.cost),
+    kitchenGrams: num(r.kitchenGrams),
+    barGrams: num(r.barGrams),
   };
 }
 
@@ -805,5 +824,68 @@ export function mapPrepDay(raw: unknown): PrepDay {
     longestOpenMinutes: num(r.longestOpenMinutes),
     tickets,
     canRecord: bool(r.canRecord),
+  };
+}
+
+const WASTE_STATIONS = new Set<WasteStation>(["kitchen", "bar"]);
+const WASTE_REASONS = new Set<WasteReason>(["prep", "spoilage", "overcook", "other"]);
+
+function mapRecipe(raw: unknown): Recipe | null {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const station = str(r.station);
+  const id = str(r.id);
+  if (!id || !WASTE_STATIONS.has(station as WasteStation)) return null;
+  const lines = Array.isArray(r.lines)
+    ? r.lines
+        .map((item) => {
+          const line = (item ?? {}) as Record<string, unknown>;
+          const title = str(line.title);
+          const grams = num(line.grams);
+          if (!title || grams < 1) return null;
+          return { title, grams };
+        })
+        .filter((x): x is { title: string; grams: number } => x !== null)
+    : [];
+  return { id, name: str(r.name), station: station as WasteStation, lines };
+}
+
+function mapWasteTicket(raw: unknown): WasteTicket | null {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const station = str(r.station);
+  const reason = str(r.reason, "other");
+  const id = str(r.id);
+  if (!id || !WASTE_STATIONS.has(station as WasteStation)) return null;
+  return {
+    id,
+    item: str(r.item),
+    station: station as WasteStation,
+    grams: num(r.grams),
+    cost: num(r.cost),
+    reason: WASTE_REASONS.has(reason as WasteReason) ? (reason as WasteReason) : "other",
+    note: str(r.note) || undefined,
+    recipeId: str(r.recipeId) || undefined,
+    recordedAt: str(r.recordedAt),
+    businessDate: str(r.businessDate),
+  };
+}
+
+export function mapWasteDay(raw: unknown): WasteDay {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const tickets = Array.isArray(r.tickets) ? r.tickets.map(mapWasteTicket).filter((x): x is WasteTicket => x !== null) : [];
+  const recipes = Array.isArray(r.recipes) ? r.recipes.map(mapRecipe).filter((x): x is Recipe => x !== null) : [];
+  return {
+    businessDate: str(r.businessDate),
+    timezone: str(r.timezone),
+    status: r.status === "live" ? "live" : "unavailable",
+    reasonKey: str(r.reasonKey) || undefined,
+    ticketCount: num(r.ticketCount),
+    grams: num(r.grams),
+    cost: num(r.cost),
+    kitchenGrams: num(r.kitchenGrams),
+    barGrams: num(r.barGrams),
+    tickets,
+    recipes,
+    canRecord: bool(r.canRecord),
+    canEditRecipes: bool(r.canEditRecipes),
   };
 }

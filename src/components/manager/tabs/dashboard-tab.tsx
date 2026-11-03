@@ -25,6 +25,7 @@ import { StatTile } from "@/components/dashboard/stat-tile";
 import { WidgetCard } from "@/components/dashboard/widget-card";
 import { ApprovalInbox } from "@/components/manager/approval-inbox";
 import { CashPanel } from "@/components/manager/cash-panel";
+import { CafeWasteCard } from "@/components/manager/cafe-waste-card";
 import { POSPanel } from "@/components/manager/pos-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ManagerTab } from "@/domain/catalog";
@@ -257,6 +258,9 @@ export function DashboardTab({
                   onClose={() => closePOS.mutate()}
                 />
               </div>
+              <div className="lg:col-span-3">
+                <CafeWasteCard workspaceId={wid} />
+              </div>
             </div>
           ) : null}
 
@@ -267,7 +271,11 @@ export function DashboardTab({
                   {tiles.map((tile) => {
                     const Icon = TILE_ICON[tileIconKey(tile.module)] ?? Ban;
                     const live = tile.status === "live";
-                    const value = live ? (tile.module === "cash" ? formatIQD(tile.value, locale) : tile.value) : "—";
+                    const value = live
+                      ? tile.module === "cash" || tile.module === "waste"
+                        ? formatIQD(tile.value, locale)
+                        : tile.value
+                      : "—";
                     return (
                       <MetricTile
                         key={tile.module}
@@ -276,7 +284,7 @@ export function DashboardTab({
                         value={value}
                         label={t[tileCopyKey(tile.labelKey)]}
                         caption={live ? undefined : t[reasonCopyKey(tile.reasonKey)]}
-                        compact={tile.module === "cash"}
+                        compact={tile.module === "cash" || tile.module === "waste"}
                         testId={`dashboard-source-${tile.module}`}
                       />
                     );

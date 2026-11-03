@@ -18,6 +18,9 @@ export interface BriefPulse {
   waitingPrep: number;
   readyPrep: number;
   servedPrep: number;
+  wasteTickets: number;
+  wasteGrams: number;
+  wasteCost: number;
 }
 
 export interface BriefHeadline {

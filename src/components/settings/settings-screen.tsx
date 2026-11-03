@@ -1,6 +1,8 @@
 "use client";
 
-import { Briefcase, Check, ChevronRight, ClipboardCheck, Globe, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Briefcase, Check, ChevronRight, ClipboardCheck, Globe, ListOrdered, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
+import { setupPath } from "@/domain/cafe/setup";
 import { displayName, personInitials, type SessionPayload } from "@/domain/session/types";
 import type { SettingsPane } from "@/domain/settings/pane";
 import {
@@ -74,6 +76,7 @@ function SettingsList({
   onLogout: () => void;
 }) {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const status = useAssistantStatus(session);
   const name = displayName(session.user);
   const letters = personInitials(session.user.firstName, session.user.lastName);
@@ -82,6 +85,7 @@ function SettingsList({
     : status.data?.configured && status.data.enabled
       ? t.aiConnected
       : t.aiNotConnected;
+  const canOpenSetup = session.workspace.kind === "cafe" && session.scope === "general_manager";
 
   return (
     <nav aria-label={t.settings} className="space-y-5" data-testid="settings-nav">
@@ -107,6 +111,16 @@ function SettingsList({
       </button>
 
       <IosGroup header={t.settingsGroupWorkspace}>
+        {canOpenSetup ? (
+          <IosRow
+            icon={<IosGlyph icon={ListOrdered} tone="indigo" />}
+            title={t.settingsSetup}
+            subtitle={t.settingsHintSetup}
+            chevron
+            onClick={() => router.push(setupPath(session.workspace.slug))}
+            testId="settings-row-setup"
+          />
+        ) : null}
         {session.workspace.kind === "cafe" ? (
           <IosRow
             icon={<IosGlyph icon={Store} tone="amber" className={pane === "cafe" ? "ring-1 ring-white/40" : undefined} />}
