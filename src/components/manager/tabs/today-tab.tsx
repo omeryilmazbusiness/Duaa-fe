@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { FloorChip, FloorChipRail } from "@/components/dashboard/floor-chip";
 import { MetricTile } from "@/components/dashboard/metric-tile";
 import { StatTile } from "@/components/dashboard/stat-tile";
+import { TodaysFocusWidget } from "@/components/coffee-corner/TodaysFocusWidget";
 import { TodayBriefHero } from "@/components/dashboard/today-brief-hero";
 import { WidgetCard } from "@/components/dashboard/widget-card";
 import { CafePrepCard } from "@/components/manager/cafe-prep-card";
@@ -162,6 +163,8 @@ export function TodayTab({
             : []),
         ]}
       />
+
+      <TodaysFocusWidget />
 
       <FloorChipRail>
         {floor.map((kpi) => (
