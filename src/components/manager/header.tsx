@@ -4,9 +4,11 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { LogOut, Menu, Settings } from "lucide-react";
 import { useState } from "react";
 import type { ManagerTab } from "@/domain/catalog";
+import type { WorkspaceOption } from "@/domain/session/types";
 import { DuaMark } from "@/components/brand/dua-mark";
 import { LanguagePicker } from "@/components/login/language-picker";
 import { ManagerAnimatedTabs } from "@/components/manager/animated-tabs";
+import { BusinessSwitcher } from "@/components/manager/business-switcher";
 import { AppHeader } from "@/components/theme/page-shell";
 import { Button } from "@/components/ui/button";
 import { DRAWER_SPRING } from "@/lib/motion";
@@ -22,6 +24,9 @@ export function ManagerDashboardHeader({
   activeTab,
   badges,
   desktopTitle,
+  workspaces,
+  activeWorkspaceId,
+  onSwitchWorkspace,
   logoutLabel,
   settingsLabel,
   onTabChange,
@@ -36,6 +41,9 @@ export function ManagerDashboardHeader({
   activeTab: ManagerTab | "";
   badges: Partial<Record<ManagerTab, number>>;
   desktopTitle?: string;
+  workspaces?: readonly WorkspaceOption[];
+  activeWorkspaceId?: string;
+  onSwitchWorkspace?: (workspaceId: string) => void;
   logoutLabel: string;
   settingsLabel?: string;
   onTabChange: (tab: ManagerTab) => void;
@@ -125,6 +133,17 @@ export function ManagerDashboardHeader({
                 <p className="text-[11px] text-white/50">{roleLine}</p>
               </div>
             </div>
+            {workspaces && workspaces.length > 1 && onSwitchWorkspace ? (
+              <BusinessSwitcher
+                compact
+                workspaces={workspaces}
+                activeWorkspaceId={activeWorkspaceId}
+                onSwitch={(id) => {
+                  setOpen(false);
+                  onSwitchWorkspace(id);
+                }}
+              />
+            ) : null}
             <nav className="px-2.5 py-3">
               <ul className="space-y-1">
                 {items.map((item) => {

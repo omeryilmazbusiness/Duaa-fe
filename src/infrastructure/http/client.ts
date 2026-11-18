@@ -1,28 +1,43 @@
 import type { TokenStore } from "@/application/ports";
 import { parseApiError } from "./errors";
+import { createWorkspaceTokenBroker, type WorkspaceTokenBroker } from "./workspace-tokens";
 
-/** Must stay above the backend chat budget (16s) and below a hung rewrite. */
-const REQUEST_TIMEOUT_MS = 20_000;
+/** Must stay above the backend chat budget (18s) and below a hung rewrite. */
+const REQUEST_TIMEOUT_MS = 22_000;
 
 export interface HttpClient {
   request<T>(path: string, init?: RequestInit): Promise<T>;
+  requestBlob(path: string, init?: RequestInit): Promise<Blob | null>;
 }
 
 export function createHttpClient(tokens: TokenStore): HttpClient {
-  return {
-    async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const broker: WorkspaceTokenBroker = createWorkspaceTokenBroker(tokens, issueWorkspaceToken);
+
+  async function send(path: string, init: RequestInit, accept: string | null): Promise<Response> {
+    for (let attempt = 0; ; attempt++) {
       const headers = new Headers(init.headers);
-      if (!headers.has("Accept")) headers.set("Accept", "application/json");
-      if (init.body && !headers.has("Content-Type")) {
+      if (accept && !headers.has("Accept")) headers.set("Accept", accept);
+      const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
+      if (init.body && !isFormData && !headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }
-      const token = tokens.get();
+      const { token, scoped } = await broker.tokenFor(path);
       if (token) headers.set("Authorization", `Bearer ${token}`);
-
       const signal = mergeSignals(init.signal ?? undefined, REQUEST_TIMEOUT_MS);
+      const res = await fetch(path, { ...init, headers, signal });
+      if (scoped && attempt === 0 && (res.status === 401 || res.status === 403)) {
+        broker.invalidate(path);
+        continue;
+      }
+      return res;
+    }
+  }
+
+  return {
+    async request<T>(path: string, init: RequestInit = {}): Promise<T> {
       let res: Response;
       try {
-        res = await fetch(path, { ...init, headers, signal });
+        res = await send(path, init, "application/json");
       } catch (err) {
         if (isAbortError(err)) {
           throw parseApiError(504, {
@@ -44,7 +59,30 @@ export function createHttpClient(tokens: TokenStore): HttpClient {
       if (!res.ok) throw parseApiError(res.status, body);
       return body as T;
     },
+
+    async requestBlob(path: string, init: RequestInit = {}): Promise<Blob | null> {
+      const res = await send(path, init, null);
+      if (res.status === 501 || res.status === 204) {
+        return null;
+      }
+      if (!res.ok) {
+        return null;
+      }
+      return res.blob();
+    },
   };
+}
+
+async function issueWorkspaceToken(workspaceId: string, primaryToken: string): Promise<string> {
+  const res = await fetch(`/v1/me/workspaces/${encodeURIComponent(workspaceId)}/select`, {
+    method: "POST",
+    headers: { Accept: "application/json", Authorization: `Bearer ${primaryToken}` },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`workspace token ${res.status}`);
+  const body = (await res.json()) as { token?: unknown };
+  if (typeof body.token !== "string" || !body.token) throw new Error("workspace token missing");
+  return body.token;
 }
 
 function mergeSignals(existing: AbortSignal | undefined, ms: number): AbortSignal {

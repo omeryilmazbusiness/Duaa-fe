@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { PanelErrorBoundary } from "@/components/errors/panel-error-boundary";
 import { IOS_EASE, STAGE_SPRING } from "@/lib/motion";
 
 export function ManagerTabPanel({ tabKey, children }: { tabKey: string; children: React.ReactNode }) {
@@ -16,7 +17,7 @@ export function ManagerTabPanel({ tabKey, children }: { tabKey: string; children
           : { ...STAGE_SPRING, opacity: { duration: 0.28, ease: IOS_EASE }, filter: { duration: 0.3, ease: IOS_EASE } }
       }
     >
-      {children}
+      <PanelErrorBoundary resetKey={tabKey}>{children}</PanelErrorBoundary>
     </motion.div>
   );
 }

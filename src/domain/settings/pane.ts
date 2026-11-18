@@ -1,4 +1,4 @@
-export const SETTINGS_PANES = ["root", "cafe", "qr", "ai", "team", "language"] as const;
+export const SETTINGS_PANES = ["root", "cafe", "qr", "hotel", "ai", "team", "language"] as const;
 
 export type SettingsPane = (typeof SETTINGS_PANES)[number];
 

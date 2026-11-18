@@ -5,6 +5,11 @@ import type {
   AssistantStatus,
   ChatReply,
   ChatRole,
+  MeetingSummarizeInput,
+  MeetingView,
+  TranscribeView,
+  TranslateInput,
+  TranslateView,
 } from "@/domain/assistant/types";
 import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
 import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
@@ -16,10 +21,20 @@ import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
 import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
 import type { DashboardView } from "@/domain/dashboard/types";
+import type { DocumentIngestInput, WorkspaceDocument } from "@/domain/docintake/types";
 import type { ActCommand, BriefView, DecisionView } from "@/domain/executive";
 import type { ApprovalAction, CashCloseView, SpendApproval } from "@/domain/finance/types";
+import type {
+  HotelPMSImportInput,
+  HotelPMSView,
+  HotelProfile,
+  HotelProfileSave,
+  OHIPConfigSave,
+  OHIPConfigView,
+} from "@/domain/hotel/pms";
+import type { PortfolioView } from "@/domain/portfolio/types";
 import type { ReportAction, ReportKind, ReportView } from "@/domain/report/types";
-import type { LoginResult, SessionPayload } from "@/domain/session/types";
+import type { LoginResult, SessionPayload, WorkspaceOption } from "@/domain/session/types";
 import type { MemberView, RoutineView, TaskView } from "@/domain/work/types";
 
 /** Token persistence. Presentation depends on this port, not localStorage. */
@@ -34,6 +49,8 @@ export interface AuthPort {
   selectWorkspace(email: string, password: string, workspaceId: string): Promise<LoginResult>;
   loginEmployee(workspaceSlug: string, employeeNumber: string): Promise<LoginResult>;
   me(): Promise<SessionPayload>;
+  listMyWorkspaces(): Promise<WorkspaceOption[]>;
+  switchWorkspace(workspaceId: string): Promise<LoginResult>;
 }
 
 export interface StaffPort {
@@ -176,8 +193,24 @@ export interface AssistantPort {
   removeAssistant(workspaceId: string): Promise<void>;
   chatWithAssistant(
     workspaceId: string,
-    input: { messages: { role: ChatRole; content: string }[]; locale: string },
+    input: { messages: { role: ChatRole; content: string }[]; locale: string; voice?: boolean },
   ): Promise<ChatReply>;
+  translateWithAssistant(workspaceId: string, input: TranslateInput): Promise<TranslateView>;
+  listMeetings(workspaceId: string): Promise<MeetingView[]>;
+  summarizeMeeting(workspaceId: string, input: MeetingSummarizeInput): Promise<MeetingView>;
+  transcribeAudio(workspaceId: string, formData: FormData): Promise<TranscribeView>;
+  speakAudio(workspaceId: string, input: { text: string; language: string }): Promise<Blob | null>;
+}
+
+export interface PortfolioPort {
+  getPortfolio(date?: string): Promise<PortfolioView>;
+  getHotelPMS(workspaceId: string, date?: string): Promise<HotelPMSView>;
+  saveHotelOHIP(workspaceId: string, input: OHIPConfigSave): Promise<OHIPConfigView>;
+  syncHotelOHIP(workspaceId: string, businessDate?: string): Promise<HotelPMSView>;
+  importHotelPMS(workspaceId: string, input: HotelPMSImportInput): Promise<HotelPMSView>;
+  saveHotelProfile(workspaceId: string, input: HotelProfileSave): Promise<HotelProfile>;
+  listWorkspaceDocs(workspaceId: string): Promise<WorkspaceDocument[]>;
+  ingestWorkspaceDoc(workspaceId: string, input: DocumentIngestInput | FormData): Promise<WorkspaceDocument>;
 }
 
 export interface KernelApi
@@ -189,4 +222,5 @@ export interface KernelApi
     DashboardPort,
     FinancePort,
     AssistantPort,
-    CafePort {}
+    CafePort,
+    PortfolioPort {}

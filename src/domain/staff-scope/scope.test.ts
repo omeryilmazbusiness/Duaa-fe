@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cafeCatalog } from "@/domain/catalog/cafe";
 import { hotelCatalog } from "@/domain/catalog/hotel";
 import { allows } from "./rbac";
-import { postLoginPath, resolveActiveTab } from "./routing";
+import { postLoginPath, resolveActiveTab, switchLandingTab } from "./routing";
 import {
   canManageStaffMember,
   defaultTab,
@@ -67,5 +67,16 @@ describe("staff scope", () => {
     expect(allows("department_manager", "cash.close")).toBe(false);
     expect(allows("department_manager", "approval.submit")).toBe(true);
     expect(allows("staff_personnel", "finance.view")).toBe(false);
+  });
+});
+
+describe("switchLandingTab", () => {
+  it("lands on the dashboard when the role has one", () => {
+    expect(switchLandingTab(["today", "dashboard", "feedback"], "today")).toBe("dashboard");
+  });
+
+  it("falls back to the role's default tab otherwise", () => {
+    expect(switchLandingTab(["today", "feedback"], "today")).toBe("today");
+    expect(switchLandingTab(["today"])).toBeUndefined();
   });
 });

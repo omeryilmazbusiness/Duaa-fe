@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Briefcase, Check, ChevronRight, ClipboardCheck, Globe, ListOrdered, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
+import { Briefcase, Building2, Check, ChevronRight, ClipboardCheck, Globe, ListOrdered, QrCode, Settings, Sparkles, Store, Users } from "lucide-react";
 import { setupPath } from "@/domain/cafe/setup";
 import { displayName, personInitials, type SessionPayload } from "@/domain/session/types";
 import type { SettingsPane } from "@/domain/settings/pane";
@@ -18,11 +18,19 @@ import { AssistantSettingsCard } from "@/components/assistant/assistant-settings
 import { CafeChecklistDesk } from "@/components/settings/cafe-checklist-desk";
 import { CafeDefinitionCard } from "@/components/settings/cafe-definition-card";
 import { CafeTableQR } from "@/components/settings/cafe-table-qr";
+import { HotelSettings } from "@/components/settings/hotel-settings";
 import { TeamTab } from "@/components/manager/tabs/team-tab";
 import { useAssistantStatus } from "@/components/assistant/use-assistant";
 import { LOCALES, type Messages, type StaffLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+
+const KIND_LABEL: Record<string, keyof Messages> = { hotel: "kindHotel", cafe: "kindCafe", supply: "kindSupply" };
+
+function kindLabel(kind: string, t: Messages): string {
+  const key = KIND_LABEL[kind];
+  return key ? t[key] : kind;
+}
 
 const LOCALE_NAME: Record<StaffLocale, keyof Messages> = {
   en: "localeEnglish",
@@ -143,6 +151,17 @@ function SettingsList({
             testId="settings-row-qr"
           />
         ) : null}
+        {session.workspace.kind === "hotel" ? (
+          <IosRow
+            icon={<IosGlyph icon={Building2} tone="indigo" className={pane === "hotel" ? "ring-1 ring-white/40" : undefined} />}
+            title={t.hotelSettingsTitle}
+            subtitle={t.settingsHintHotel}
+            chevron
+            active={pane === "hotel"}
+            onClick={() => onPane("hotel")}
+            testId="settings-row-hotel"
+          />
+        ) : null}
         <IosRow
           icon={<IosGlyph icon={Sparkles} tone="violet" className={pane === "ai" ? "ring-1 ring-white/40" : undefined} />}
           title={t.aiSettingsTitle}
@@ -174,7 +193,7 @@ function SettingsList({
           onClick={() => onPane("language")}
           testId="settings-row-language"
         />
-        <IosRow icon={<IosGlyph icon={Briefcase} tone="amber" />} title={t.product} subtitle={session.workspace.kind} />
+        <IosRow icon={<IosGlyph icon={Briefcase} tone="amber" />} title={t.product} subtitle={kindLabel(session.workspace.kind, t)} />
       </IosGroup>
 
       <IosGroup>
@@ -229,6 +248,15 @@ function SettingsDetail({
       </article>
     );
   }
+  if (pane === "hotel" && session.workspace.kind === "hotel") {
+    return (
+      <article className="space-y-6" data-testid="settings-detail-hotel">
+        <IosNavBar backLabel={t.settings} onBack={() => onPane("root")} />
+        <DetailHeader icon={Building2} tone="indigo" title={t.hotelSettingsTitle} description={t.hotelSettingsHint} />
+        <HotelSettings workspaceId={session.workspace.id} />
+      </article>
+    );
+  }
   if (pane === "ai") {
     return (
       <article className="space-y-6" data-testid="settings-detail-ai">
@@ -265,7 +293,7 @@ function DetailHeader({
   description,
 }: {
   icon: typeof Sparkles;
-  tone: "violet" | "sky" | "teal" | "amber";
+  tone: "violet" | "sky" | "teal" | "amber" | "indigo";
   title: string;
   description: string;
 }) {

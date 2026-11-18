@@ -8,6 +8,7 @@ import { FeedbackTab } from "@/components/manager/tabs/feedback-tab";
 import { OpsTab } from "@/components/manager/tabs/ops-tab";
 import { OverviewTab } from "@/components/manager/tabs/overview-tab";
 import { RequestsTab } from "@/components/manager/tabs/requests-tab";
+import { ReservationsTab } from "@/components/manager/tabs/reservations-tab";
 import { RoutinesTab } from "@/components/manager/tabs/routines-tab";
 import { TasksTab } from "@/components/manager/tabs/tasks-tab";
 import { TeamTab } from "@/components/manager/tabs/team-tab";
@@ -45,6 +46,7 @@ export function ManagerTabBody({
           workspaceId={wid}
           canAssign={session.scope === "general_manager" || session.scope === "department_manager"}
           canRotate={session.scope === "general_manager" || session.scope === "floor_ops"}
+          isCafe={session.workspace.kind === "cafe"}
           onOpenTab={onOpenTab}
         />
       );
@@ -64,7 +66,7 @@ export function ManagerTabBody({
     case "routines":
       return <RoutinesTab session={session} />;
     case "reservations":
-      return <ComingSoonPanel title={t.tabReservations} />;
+      return <ReservationsTab session={session} />;
     case "guests":
       return <ComingSoonPanel title={t.tabGuests} />;
     case "rooms":

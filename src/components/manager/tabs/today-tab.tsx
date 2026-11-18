@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CheckCircle2, ClipboardCheck, ClipboardList, Clock3, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
+import { Banknote, CalendarDays, CheckCircle2, ClipboardCheck, ClipboardList, Clock3, Handshake, LayoutGrid, ListTodo, MessageSquare, ShieldCheck, Sparkles, TimerOff, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { FloorChip, FloorChipRail } from "@/components/dashboard/floor-chip";
@@ -11,6 +11,7 @@ import { TodaysFocusWidget } from "@/components/coffee-corner/TodaysFocusWidget"
 import { TodayBriefHero } from "@/components/dashboard/today-brief-hero";
 import { WidgetCard } from "@/components/dashboard/widget-card";
 import { CafePrepCard } from "@/components/manager/cafe-prep-card";
+import { HotelTodayCard } from "@/components/manager/workspace-dashboard/hotel-today-card";
 import { DecisionCard } from "@/components/manager/decision-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ManagerTab } from "@/domain/catalog";
@@ -54,6 +55,9 @@ export function TodayTab({
   const { t, locale } = useLocale();
   const qc = useQueryClient();
   const workspaceId = session.workspace.id;
+  // Prep times, stock and the coffee-corner focus are cafe-only services; other verticals never call them.
+  const isCafe = session.workspace.kind === "cafe";
+  const isHotel = session.workspace.kind === "hotel";
   const brief = useQuery({
     queryKey: qk.brief(workspaceId),
     queryFn: () => kernel.getBrief(workspaceId),
@@ -97,7 +101,8 @@ export function TodayTab({
     wasteCost: 0,
   };
   const kpis = todayKpis(pulse);
-  const floor = floorKpis(pulse);
+  // Only breakdown reports exist outside cafes; recoveries, handover, close, checks and prep are cafe floor signals.
+  const floor = floorKpis(pulse).filter((kpi) => isCafe || kpi.id === "breakdowns");
   const personnel = (staff.data ?? []).filter((m) => m.role === "personnel" && m.isActive);
   const overdueItems = (tasks.data ?? [])
     .filter((task) => task.isOverdue)
@@ -142,7 +147,7 @@ export function TodayTab({
       <TodayBriefHero
         kicker={t.todayKicker}
         summary={brief.data ? headline : t.allClear}
-        detail={brief.data ? `${session.workspace.name} · ${t.tabToday}` : t.todaySubtitle}
+        detail={brief.data ? `${session.workspace.name} · ${t.tabToday}` : isCafe ? t.todaySubtitle : session.workspace.name}
         primaryAction={
           urgent
             ? {
@@ -158,13 +163,16 @@ export function TodayTab({
         actions={[
           { id: "ops", label: t.tabOps, icon: ListTodo, tone: "amber", onClick: () => onOpenTab("ops") },
           { id: "dashboard", label: t.tabDashboard, icon: LayoutGrid, tone: "teal", onClick: () => onOpenTab("dashboard") },
+          ...(session.tabs.includes("reservations")
+            ? [{ id: "reservations", label: t.tabReservations, icon: CalendarDays, tone: "indigo" as const, onClick: () => onOpenTab("reservations") }]
+            : []),
           ...(session.tabs.includes("feedback")
             ? [{ id: "feedback", label: t.tabFeedback, icon: MessageSquare, tone: "violet" as const, onClick: () => onOpenTab("feedback") }]
             : []),
         ]}
       />
 
-      <TodaysFocusWidget workspaceId={workspaceId} />
+      {isCafe ? <TodaysFocusWidget workspaceId={workspaceId} /> : null}
 
       <FloorChipRail>
         {floor.map((kpi) => (
@@ -195,7 +203,7 @@ export function TodayTab({
         ))}
       </div>
 
-      <CafePrepCard session={session} />
+      {isCafe ? <CafePrepCard session={session} /> : null}
 
       {brief.isLoading ? (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -236,6 +244,9 @@ export function TodayTab({
             )}
           </WidgetCard>
 
+          {isHotel ? (
+            <HotelTodayCard workspaceId={workspaceId} />
+          ) : (
           <WidgetCard title={t.todaySources} icon={MessageSquare} tone="sky" testId="today-sources">
             {sources.length === 0 ? (
               <p className="text-[13px] text-zinc-500">{t.sourceUnavailable}</p>
@@ -274,6 +285,7 @@ export function TodayTab({
               </div>
             )}
           </WidgetCard>
+          )}
         </div>
       )}
     </div>

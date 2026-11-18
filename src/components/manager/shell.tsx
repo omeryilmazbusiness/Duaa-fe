@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ManagerTab } from "@/domain/catalog";
 import { resolveActiveTab, managerGuard, postLoginPath } from "@/domain/staff-scope";
+import { useSwitchBusiness } from "@/components/manager/use-switch-business";
 import { readSetupLater, setupPath } from "@/domain/cafe/setup";
 import { AssistantWidget } from "@/components/assistant/assistant-widget";
 import { ManagerDashboardHeader } from "@/components/manager/header";
@@ -70,7 +71,8 @@ export function ManagerShell({ slug }: { slug: string }) {
   }, [pendingTab, urlSettings, urlTab]);
 
   const settingsOpen = pendingTab === "settings" || (pendingTab === null && urlSettings);
-  const pendingManagerTab = pendingTab !== null && pendingTab !== "settings" ? pendingTab : null;
+  const pendingManagerTab =
+    pendingTab !== null && pendingTab !== "settings" && tabs.includes(pendingTab) ? pendingTab : null;
   const active = settingsOpen ? "" : (pendingManagerTab ?? urlTab);
 
   const setTab = useCallback(
@@ -116,6 +118,8 @@ export function ManagerShell({ slug }: { slug: string }) {
     };
   }, [brief.data, reports.data]);
 
+  const handleSwitchWorkspace = useSwitchBusiness();
+
   const workshopGatePending =
     !!session &&
     session.scope === "general_manager" &&
@@ -132,6 +136,7 @@ export function ManagerShell({ slug }: { slug: string }) {
   }
 
   const isGm = session.scope === "general_manager";
+  const workspaces = session.workspaces ?? [];
   const title = settingsOpen
     ? t.settings
     : (navForTabs(tabs).find((n) => n.id === active)?.label(t) ?? t.tabToday);
@@ -144,6 +149,9 @@ export function ManagerShell({ slug }: { slug: string }) {
         tabs={tabs}
         activeTab={active}
         badges={badges}
+        workspaces={workspaces}
+        activeWorkspaceId={session.workspace.id}
+        onSwitchWorkspace={isGm ? handleSwitchWorkspace : undefined}
         logoutLabel={t.logout}
         settingsLabel={isGm ? t.settings : undefined}
         settingsActive={settingsOpen}
@@ -158,7 +166,7 @@ export function ManagerShell({ slug }: { slug: string }) {
         className={
           settingsOpen
             ? "ios-settings min-h-dvh bg-zinc-50 lg:ps-64"
-            : active === "dashboard" || active === "today" || active === "ops" || active === "feedback"
+            : active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "reservations"
               ? "min-h-dvh bg-[#F9FAFB] lg:ps-64"
               : "lg:ps-64"
         }
@@ -170,10 +178,13 @@ export function ManagerShell({ slug }: { slug: string }) {
           activeTab={active}
           badges={badges}
           desktopTitle={title}
+          workspaces={workspaces}
+          activeWorkspaceId={session.workspace.id}
+          onSwitchWorkspace={isGm ? handleSwitchWorkspace : undefined}
           logoutLabel={t.logout}
           settingsLabel={isGm ? t.settings : undefined}
           settingsChrome={settingsOpen}
-          boardChrome={active === "dashboard" || active === "today" || active === "ops" || active === "feedback"}
+          boardChrome={active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "reservations"}
           onTabChange={setTab}
           onSettings={isGm ? openSettings : undefined}
           onLogout={() => {
@@ -190,7 +201,7 @@ export function ManagerShell({ slug }: { slug: string }) {
                 : undefined
           }
         >
-          <ManagerTabPanel tabKey={settingsOpen ? `settings:${settingsPane}` : active || "empty"}>
+          <ManagerTabPanel tabKey={`${session.workspace.id}:${settingsOpen ? `settings:${settingsPane}` : active || "empty"}`}>
             {settingsOpen && isGm ? (
               <SettingsScreen
                 session={session}
@@ -207,7 +218,7 @@ export function ManagerShell({ slug }: { slug: string }) {
           </ManagerTabPanel>
         </ScreenMain>
       </div>
-      {isGm ? <AssistantWidget session={session} /> : null}
+      {isGm ? <AssistantWidget key={session.workspace.id} session={session} /> : null}
     </PageShell>
   );
 }

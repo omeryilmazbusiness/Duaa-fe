@@ -49,13 +49,27 @@ export function ManagerLoginForm({ slug }: { slug?: string }) {
         setError("Login did not return a session");
         return;
       }
-      acceptLogin(res.token, res.session, res.expiresIn);
+      let activeToken = res.token;
+      let activeSession = res.session;
+      let activeExp = res.expiresIn;
+      if (slug && res.session.workspace.slug !== slug) {
+        const target = res.workspaces?.find((w) => w.slug === slug);
+        if (target) {
+          const switched = await kernel.selectWorkspace(email, password, target.id);
+          if (switched.token && switched.session) {
+            activeToken = switched.token;
+            activeSession = switched.session;
+            activeExp = switched.expiresIn;
+          }
+        }
+      }
+      acceptLogin(activeToken, activeSession, activeExp);
       toast.success("Welcome back");
       router.replace(
         postLoginPath({
-          slug: res.session.workspace.slug,
-          surface: res.session.surface,
-          defaultTab: res.session.defaultTab,
+          slug: activeSession.workspace.slug,
+          surface: activeSession.surface,
+          defaultTab: activeSession.defaultTab,
         }),
       );
     } catch (err) {

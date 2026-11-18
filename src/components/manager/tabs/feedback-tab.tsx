@@ -128,22 +128,25 @@ export function FeedbackTab({
   workspaceId,
   canAssign,
   canRotate,
+  isCafe,
 }: {
   workspaceId: string;
   canAssign: boolean;
   canRotate: boolean;
+  /** Voices, handover, daily close, checklists, QR, stock and waste exist only on cafe workspaces. */
+  isCafe: boolean;
   onOpenTab?: (tab: ManagerTab) => void;
 }) {
   const { t } = useLocale();
   const reduce = useReducedMotion();
   const [opsOpen, setOpsOpen] = useState(false);
-  const voices = useQuery({ queryKey: qk.cafeVoices(workspaceId), queryFn: () => kernel.listCafeVoices(workspaceId), staleTime: 15_000 });
+  const voices = useQuery({ queryKey: qk.cafeVoices(workspaceId), queryFn: () => kernel.listCafeVoices(workspaceId), staleTime: 15_000, enabled: isCafe });
   const reports = useQuery({ queryKey: qk.reports(workspaceId), queryFn: () => kernel.listReports(workspaceId), staleTime: 15_000 });
-  const handover = useQuery({ queryKey: qk.cafeHandover(workspaceId), queryFn: () => kernel.getCafeHandover(workspaceId), staleTime: 15_000 });
-  const intake = useQuery({ queryKey: qk.cafeIntake(workspaceId), queryFn: () => kernel.getCafeIntake(workspaceId), staleTime: 15_000 });
-  const checks = useQuery({ queryKey: qk.cafeChecklist(workspaceId), queryFn: () => kernel.getCafeChecklist(workspaceId), staleTime: 15_000 });
+  const handover = useQuery({ queryKey: qk.cafeHandover(workspaceId), queryFn: () => kernel.getCafeHandover(workspaceId), staleTime: 15_000, enabled: isCafe });
+  const intake = useQuery({ queryKey: qk.cafeIntake(workspaceId), queryFn: () => kernel.getCafeIntake(workspaceId), staleTime: 15_000, enabled: isCafe });
+  const checks = useQuery({ queryKey: qk.cafeChecklist(workspaceId), queryFn: () => kernel.getCafeChecklist(workspaceId), staleTime: 15_000, enabled: isCafe });
 
-  const pending = voices.isPending || reports.isPending || handover.isPending || intake.isPending || checks.isPending;
+  const pending = reports.isPending || (isCafe && (voices.isPending || handover.isPending || intake.isPending || checks.isPending));
   const openRecoveries = (voices.data ?? []).filter((v) => v.needsRecovery && v.recoveryStatus !== "closed").length;
   const lateRecoveries = (voices.data ?? []).filter((v) => v.lateAck || v.lateResolve).length;
   const openBreakdowns = (reports.data ?? []).filter((r) => r.kind === "breakage" && r.status !== "resolved").length;
@@ -170,7 +173,7 @@ export function FeedbackTab({
       <motion.header className="px-0.5 pt-0.5" variants={FADE_UP} transition={{ duration: 0.45, ease: IOS_EASE }}>
         <p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-violet-500/80">{t.tabFeedback}</p>
         <h1 className="mt-1 text-[28px] font-bold tracking-tight text-zinc-950">{summary}</h1>
-        <p className="mt-1 max-w-xl text-[15px] leading-snug text-zinc-500">{t.feedbackHint}</p>
+        {isCafe ? <p className="mt-1 max-w-xl text-[15px] leading-snug text-zinc-500">{t.feedbackHint}</p> : null}
       </motion.header>
 
       <motion.div
@@ -178,6 +181,7 @@ export function FeedbackTab({
         data-testid="feedback-kpis"
         variants={STAGGER_PARENT}
       >
+        {isCafe ? (
         <StatusMetric
           label={t.floorRecoveries}
           icon={MessageSquare}
@@ -186,6 +190,7 @@ export function FeedbackTab({
           active={!pending && openRecoveries > 0}
           testId="feedback-kpi-recoveries"
         />
+        ) : null}
         <StatusMetric
           label={t.floorBreakdowns}
           icon={Wrench}
@@ -194,6 +199,8 @@ export function FeedbackTab({
           active={!pending && openBreakdowns > 0}
           testId="feedback-kpi-breakdowns"
         />
+        {isCafe ? (
+          <>
         <StatusMetric
           label={t.floorHandover}
           icon={Handshake}
@@ -218,9 +225,12 @@ export function FeedbackTab({
           active={!pending && checkRemaining > 0}
           testId="feedback-kpi-checks"
         />
+          </>
+        ) : null}
       </motion.div>
 
       <div className="grid items-start gap-3.5 lg:grid-cols-2 lg:gap-4">
+        {isCafe ? (
         <FloorSection
           title={t.reviewInbox}
           icon={MessageSquare}
@@ -231,6 +241,7 @@ export function FeedbackTab({
         >
           <VoiceInbox workspaceId={workspaceId} canRecover={canRotate} />
         </FloorSection>
+        ) : null}
 
         <FloorSection
           title={t.employeeReports}
@@ -244,6 +255,7 @@ export function FeedbackTab({
         </FloorSection>
       </div>
 
+      {isCafe ? (
       <motion.div
         className={cn(
           "overflow-hidden rounded-[24px] border border-white/80 bg-gradient-to-br shadow-[0_1px_0_rgba(15,23,42,0.04),0_20px_40px_-28px_rgba(15,23,42,0.35)]",
@@ -313,10 +325,13 @@ export function FeedbackTab({
           ) : null}
         </AnimatePresence>
       </motion.div>
+      ) : null}
 
+      {isCafe ? (
       <FloorSection title={t.qrDesk} icon={QrCode} tone="indigo" testId="feedback-qr" index={2}>
         <CafeQRDesk workspaceId={workspaceId} canRotate={canRotate} />
       </FloorSection>
+      ) : null}
     </motion.div>
   );
 }

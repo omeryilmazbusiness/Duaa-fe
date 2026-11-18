@@ -27,3 +27,8 @@ export function departmentLabel(dept: string): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 }
+
+/** Short figure for the middle of a ring, e.g. 12.4K. */
+export function formatCompact(value: number, locale = "en"): string {
+  return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+}

@@ -6,6 +6,11 @@ import type {
   AssistantStatus,
   ChatReply,
   ChatRole,
+  MeetingSummarizeInput,
+  MeetingView,
+  TranscribeView,
+  TranslateInput,
+  TranslateView,
 } from "@/domain/assistant/types";
 import type { CafeDefinition, CafeDefinitionSave } from "@/domain/cafe/definition";
 import type { CafeCheckDraft, CafeChecklist } from "@/domain/cafe/checklist";
@@ -17,10 +22,20 @@ import type { CafeHandover, CafeHandoverOpen } from "@/domain/cafe/handover";
 import type { CafeIntake, CafeIntakeSave } from "@/domain/cafe/intake";
 import type { CafeQRCode, CafeVoice, PublicQR, PublicQRSubmit, RecoveryAction } from "@/domain/cafe/qr";
 import type { DashboardView } from "@/domain/dashboard/types";
+import type { DocumentIngestInput, WorkspaceDocument } from "@/domain/docintake/types";
 import type { ActCommand, BriefView, DecisionView } from "@/domain/executive";
 import type { ApprovalAction, CashCloseView, SpendApproval } from "@/domain/finance/types";
+import type {
+  HotelPMSImportInput,
+  HotelPMSView,
+  HotelProfile,
+  HotelProfileSave,
+  OHIPConfigSave,
+  OHIPConfigView,
+} from "@/domain/hotel/pms";
+import type { PortfolioView } from "@/domain/portfolio/types";
 import type { ReportAction, ReportKind, ReportView } from "@/domain/report/types";
-import type { LoginResult, SessionPayload } from "@/domain/session/types";
+import type { LoginResult, SessionPayload, WorkspaceOption } from "@/domain/session/types";
 import type { MemberView, RoutineView, TaskView } from "@/domain/work/types";
 import { createHttpClient, type HttpClient } from "./client";
 import {
@@ -30,10 +45,21 @@ import {
   mapAssistantStatus,
   mapCafeDefinition,
   mapCafeChecklist,
+  mapHotelPMS,
+  mapHotelProfile,
+  mapMeetingList,
+  mapMeetingView,
+  mapOHIPConfig,
+  mapPortfolioView,
   mapPOSDay,
   mapPrepDay,
   mapStockDay,
+  mapTranscribeView,
+  mapTranslateView,
   mapWasteDay,
+  mapWorkspaceDocument,
+  mapWorkspaceDocumentList,
+  mapWorkspaceList,
   mapCafeHandover,
   mapCafeIntake,
   mapCafeQRCode,
@@ -86,6 +112,16 @@ export class HttpKernelApi implements KernelApi {
 
   me(): Promise<SessionPayload> {
     return this.http.request("/v1/me").then(mapSession);
+  }
+
+  listMyWorkspaces(): Promise<WorkspaceOption[]> {
+    return this.http.request("/v1/me/workspaces").then(mapWorkspaceList);
+  }
+
+  switchWorkspace(workspaceId: string): Promise<LoginResult> {
+    return this.http
+      .request(`/v1/me/workspaces/${workspaceId}/select`, { method: "POST" })
+      .then(mapLogin);
   }
 
   listPersonnel(workspaceId: string): Promise<MemberView[]> {
@@ -328,7 +364,7 @@ export class HttpKernelApi implements KernelApi {
 
   chatWithAssistant(
     workspaceId: string,
-    input: { messages: { role: ChatRole; content: string }[]; locale: string },
+    input: { messages: { role: ChatRole; content: string }[]; locale: string; voice?: boolean },
   ): Promise<ChatReply> {
     // Cap wait so a slow provider never parks the GM; UI maps timeout to the warming copy.
     return this.http
@@ -560,5 +596,100 @@ export class HttpKernelApi implements KernelApi {
         body: JSON.stringify(input),
       })
       .then(mapStockDay);
+  }
+
+  getPortfolio(date?: string): Promise<PortfolioView> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/executive/portfolio${q}`).then(mapPortfolioView);
+  }
+
+  getHotelPMS(workspaceId: string, date?: string): Promise<HotelPMSView> {
+    const q = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.http.request(`/v1/workspaces/${workspaceId}/hotel/pms${q}`).then(mapHotelPMS);
+  }
+
+  saveHotelOHIP(workspaceId: string, input: OHIPConfigSave): Promise<OHIPConfigView> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/hotel/ohip`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      })
+      .then(mapOHIPConfig);
+  }
+
+  syncHotelOHIP(workspaceId: string, businessDate?: string): Promise<HotelPMSView> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/hotel/ohip/sync`, {
+        method: "POST",
+        body: JSON.stringify({ businessDate: businessDate ?? "" }),
+      })
+      .then(mapHotelPMS);
+  }
+
+  importHotelPMS(workspaceId: string, input: HotelPMSImportInput): Promise<HotelPMSView> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/hotel/pms/import`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapHotelPMS);
+  }
+
+  saveHotelProfile(workspaceId: string, input: HotelProfileSave): Promise<HotelProfile> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/hotel/profile`, {
+        method: "PUT",
+        body: JSON.stringify(input),
+      })
+      .then(mapHotelProfile);
+  }
+
+  listWorkspaceDocs(workspaceId: string): Promise<WorkspaceDocument[]> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/documents`).then(mapWorkspaceDocumentList);
+  }
+
+  ingestWorkspaceDoc(workspaceId: string, input: DocumentIngestInput | FormData): Promise<WorkspaceDocument> {
+    const body = typeof FormData !== "undefined" && input instanceof FormData ? input : JSON.stringify(input);
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/documents`, { method: "POST", body })
+      .then(mapWorkspaceDocument);
+  }
+
+  translateWithAssistant(workspaceId: string, input: TranslateInput): Promise<TranslateView> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/assistant/translate`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapTranslateView);
+  }
+
+  listMeetings(workspaceId: string): Promise<MeetingView[]> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/assistant/meetings`).then(mapMeetingList);
+  }
+
+  summarizeMeeting(workspaceId: string, input: MeetingSummarizeInput): Promise<MeetingView> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/assistant/meetings/summarize`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapMeetingView);
+  }
+
+  transcribeAudio(workspaceId: string, formData: FormData): Promise<TranscribeView> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/assistant/audio/transcribe`, {
+        method: "POST",
+        body: formData,
+      })
+      .then(mapTranscribeView);
+  }
+
+  speakAudio(workspaceId: string, input: { text: string; language: string }): Promise<Blob | null> {
+    return this.http.requestBlob(`/v1/workspaces/${workspaceId}/assistant/audio/speak`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 }

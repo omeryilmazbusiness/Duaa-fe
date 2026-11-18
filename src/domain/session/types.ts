@@ -21,12 +21,14 @@ export interface WorkspacePayload {
   name: string;
   kind: WorkspaceKind;
   slug: string;
+  timezone?: string;
 }
 
 export interface SessionPayload {
   user: UserPayload;
   membership: MembershipPayload;
   workspace: WorkspacePayload;
+  workspaces?: WorkspaceOption[];
   scope: StaffScope;
   scopeLabel: string;
   tabs: ManagerTab[];
@@ -39,6 +41,7 @@ export interface WorkspaceOption {
   name: string;
   kind: string;
   slug: string;
+  timezone?: string;
 }
 
 export interface LoginResult {

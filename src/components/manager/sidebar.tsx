@@ -2,7 +2,9 @@
 
 import { LogOut, Settings } from "lucide-react";
 import type { ManagerTab } from "@/domain/catalog";
+import type { WorkspaceOption } from "@/domain/session/types";
 import { DuaMark } from "@/components/brand/dua-mark";
+import { BusinessSwitcher } from "@/components/manager/business-switcher";
 import { navForTabs } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
@@ -14,6 +16,9 @@ export function ManagerDesktopSidebar({
   tabs,
   activeTab,
   badges,
+  workspaces,
+  activeWorkspaceId,
+  onSwitchWorkspace,
   logoutLabel,
   settingsLabel,
   settingsActive,
@@ -26,6 +31,9 @@ export function ManagerDesktopSidebar({
   tabs: readonly ManagerTab[];
   activeTab: ManagerTab | "";
   badges: Partial<Record<ManagerTab, number>>;
+  workspaces?: readonly WorkspaceOption[];
+  activeWorkspaceId?: string;
+  onSwitchWorkspace?: (workspaceId: string) => void;
   logoutLabel: string;
   settingsLabel?: string;
   settingsActive?: boolean;
@@ -45,6 +53,9 @@ export function ManagerDesktopSidebar({
           <p className="truncate text-[11px] font-medium text-white/50">{roleLine}</p>
         </div>
       </div>
+      {workspaces && workspaces.length > 1 && onSwitchWorkspace ? (
+        <BusinessSwitcher workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} onSwitch={onSwitchWorkspace} />
+      ) : null}
       <nav className="flex-1 overflow-y-auto overscroll-contain px-2.5 py-3">
         <ul className="space-y-1">
           {items.map((item) => {

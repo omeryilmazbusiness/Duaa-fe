@@ -1,8 +1,17 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { TONE_SOFT, TONE_SOLID, type Tone } from "@/theme/tones";
+
+const WidgetFrameContext = createContext<"card" | "bare">("card");
+
+/** Renders nested WidgetCards without their own frame/header — for use inside a titled collapsible section. */
+export function BareWidgetFrame({ children }: { children: ReactNode }) {
+  return <WidgetFrameContext.Provider value="bare">{children}</WidgetFrameContext.Provider>;
+}
 
 export function WidgetCard({
   title,
@@ -27,6 +36,33 @@ export function WidgetCard({
   className?: string;
   testId?: string;
 }) {
+  const frame = useContext(WidgetFrameContext);
+  const openButton = onOpen ? (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={openLabel ?? title}
+      title={openLabel}
+      className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+    >
+      <ChevronRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
+    </button>
+  ) : null;
+
+  if (frame === "bare") {
+    return (
+      <div className={cn("flex min-h-0 flex-col", className)} data-testid={testId}>
+        {actions || openButton ? (
+          <div className="mb-3 flex items-center justify-end gap-2">
+            {actions}
+            {openButton}
+          </div>
+        ) : null}
+        {children}
+      </div>
+    );
+  }
+
   return (
     <section
       className={cn(
@@ -45,17 +81,7 @@ export function WidgetCard({
         ) : null}
         <div className="ms-auto flex shrink-0 items-center gap-2">
           {actions}
-          {onOpen ? (
-            <button
-              type="button"
-              onClick={onOpen}
-              aria-label={openLabel ?? title}
-              title={openLabel}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-            >
-              <ChevronRight className="h-4 w-4 rtl:rotate-180" strokeWidth={2} />
-            </button>
-          ) : null}
+          {openButton}
         </div>
       </header>
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>

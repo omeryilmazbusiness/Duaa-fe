@@ -20,5 +20,10 @@ export const qk = {
   cafePrep: (wid: string) => ["cafe", "prep", wid] as const,
   cafeWaste: (wid: string) => ["cafe", "waste", wid] as const,
   cafeStock: (wid: string) => ["cafe", "stock", wid] as const,
+  workspaces: ["me", "workspaces"] as const,
+  portfolio: (date?: string) => ["executive", "portfolio", date ?? "today"] as const,
+  hotelPMS: (wid: string, date?: string) => ["hotel", "pms", wid, date ?? "today"] as const,
+  workspaceDocs: (wid: string) => ["workspace", "docs", wid] as const,
+  assistantMeetings: (wid: string) => ["assistant", "meetings", wid] as const,
   publicQR: (token: string) => ["public", "qr", token] as const,
 };

@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { SessionPayload } from "@/domain/session/types";
+import type { LoginResult, SessionPayload } from "@/domain/session/types";
 import { ApiError } from "@/infrastructure/http/errors";
 import { kernel, tokenStore } from "@/lib/kernel";
 import { qk } from "@/lib/query-keys";
@@ -14,12 +14,14 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   setToken: (token: string, expiresInSec?: number) => void;
   acceptLogin: (token: string, session: SessionPayload, expiresInSec?: number) => void;
+  switchWorkspace: (workspaceId: string) => Promise<LoginResult>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const qc = useQueryClient();
   const [ready, setReady] = useState(false);
   const [cached, setCached] = useState<SessionPayload | null>(null);
   const token = useSyncExternalStore(tokenStore.subscribe, tokenStore.get, tokenStore.getServerSnapshot);
@@ -40,10 +42,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     tokenStore.set(next, expiresInSec);
   }, []);
 
+  const switchWorkspace = useCallback(
+    async (workspaceId: string) => {
+      const res = await kernel.switchWorkspace(workspaceId);
+      if (res.token && res.session) {
+        // PDF WS-01: clear prior business caches on workspace switch.
+        qc.clear();
+        tokenStore.writeSession(res.session);
+        setCached(res.session);
+        tokenStore.set(res.token, res.expiresIn);
+      }
+      return res;
+    },
+    [qc],
+  );
+
   const logout = useCallback(() => {
+    qc.clear();
     setCached(null);
     tokenStore.clear();
-  }, []);
+  }, [qc]);
 
   const me = useQuery({
     queryKey: [...qk.me, liveToken],
@@ -78,9 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: ready && !!liveToken && !!session,
       setToken,
       acceptLogin,
+      switchWorkspace,
       logout,
     }),
-    [ready, liveToken, session, me.isError, setToken, acceptLogin, logout],
+    [ready, liveToken, session, me.isError, setToken, acceptLogin, switchWorkspace, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

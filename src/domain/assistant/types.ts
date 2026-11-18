@@ -62,6 +62,65 @@ export interface ChatReply {
   usage: AssistantUsage;
 }
 
+export type TranslateMode = "translate" | "explain_term";
+export type VoiceLang = "en" | "ar" | "tr" | "auto";
+export type AssistantPanelMode = "ask" | "translate" | "meeting";
+
+export interface TranslateInput {
+  text: string;
+  sourceLang: VoiceLang;
+  targetLang: "en" | "ar" | "tr";
+  mode: TranslateMode;
+  context?: string;
+}
+
+export interface TranslateView {
+  translated: string;
+  simpleExplanation?: string;
+  toneNote?: string;
+  suggestedReply?: string;
+  sourceLang: string;
+  targetLang: string;
+  mode: TranslateMode;
+  usage: AssistantUsage;
+}
+
+export interface MeetingItem {
+  text: string;
+  owner?: string;
+  dueAt?: string;
+  ambiguous: boolean;
+}
+
+export interface MeetingSummarizeInput {
+  title: string;
+  participants: string[];
+  transcript: string;
+  sourceLocale?: string;
+  targetLocale?: string;
+}
+
+export interface MeetingView {
+  id: string;
+  title: string;
+  businessDate: string;
+  participants: string[];
+  transcript: string;
+  translatedTranscript: string;
+  summary: string;
+  decisions: MeetingItem[];
+  actionItems: MeetingItem[];
+  sourceLocale: string;
+  targetLocale: string;
+  aiUsed: boolean;
+  createdAt: string;
+}
+
+export interface TranscribeView {
+  text: string;
+  detectedLanguage: string;
+}
+
 export const MAX_MESSAGE_CHARS = 2000;
 export const MAX_HISTORY = 4;
 export const MIN_DAILY_LIMIT = 1;

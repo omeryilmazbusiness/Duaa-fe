@@ -20,4 +20,5 @@ export {
   staffLoginPath,
   resolveActiveTab,
   managerGuard,
+  switchLandingTab,
 } from "./routing";

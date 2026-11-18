@@ -43,3 +43,12 @@ export function managerGuard(scope: StaffScope): "manager" | "staff" | "login" {
   }
   return "login";
 }
+
+/**
+ * Where a manager lands after switching business: that business's own dashboard when the role
+ * has one, otherwise the role's usual first tab.
+ */
+export function switchLandingTab(tabs: readonly ManagerTab[], fallback?: string): string | undefined {
+  if (tabs.includes("dashboard")) return "dashboard";
+  return fallback;
+}

@@ -1,15 +1,26 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowUp, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowUp, Mic, Plus, Sparkles, Square, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { chatTitle } from "@/domain/assistant/desk";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { canSend, MAX_MESSAGE_CHARS, usageRatio, type AssistantUsage } from "@/domain/assistant/types";
+import {
+  canSend,
+  MAX_MESSAGE_CHARS,
+  usageRatio,
+  type AssistantPanelMode,
+  type AssistantStatus,
+  type AssistantUsage,
+} from "@/domain/assistant/types";
 import type { SessionPayload } from "@/domain/session/types";
+import { qk } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import { AiMark } from "./ai-mark";
+import { AssistantMeetingPane, AssistantTranslatorPane } from "./assistant-voice-studio";
 import { useAssistantChat, useAssistantStatus } from "./use-assistant";
+import { useVoiceIO } from "./use-voice";
 
 /** Floating DUAA AI — always on the right for the GM. Chat opens only when available. */
 export function AssistantWidget({ session }: { session: SessionPayload }) {
@@ -109,11 +120,15 @@ function AssistantWarming() {
 
 function Assistant({ session, usage }: { session: SessionPayload; usage: AssistantUsage }) {
   const { t, locale } = useLocale();
+  const qc = useQueryClient();
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
+  const [panelMode, setPanelMode] = useState<AssistantPanelMode>("ask");
+  const [autoSpeak, setAutoSpeak] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const voice = useVoiceIO(session.workspace.id);
 
   const onFailed = useCallback((text: string, tabId: string) => {
     setDrafts((cur) => ({ ...cur, [tabId]: text }));
@@ -123,6 +138,17 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
   const setDraft = (text: string) => setDrafts((cur) => ({ ...cur, [chat.activeId]: text }));
   const exhausted = usage.remaining <= 0;
   const sendable = canSend(draft, chat.pending, usage.remaining);
+  const lastAutoSpokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!autoSpeak || !chat.streamingId) return;
+    if (lastAutoSpokenRef.current === chat.streamingId) return;
+    const msg = chat.messages.find((m) => m.id === chat.streamingId && m.role === "assistant");
+    if (msg) {
+      lastAutoSpokenRef.current = chat.streamingId;
+      void voice.speak(msg.content, locale);
+    }
+  }, [autoSpeak, chat.streamingId, chat.messages, locale, voice]);
 
   useEffect(() => {
     if (!open) return;
@@ -144,7 +170,7 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
     setDraft("");
   };
 
-  const suggestions = [t.aiSuggestSummary, t.aiSuggestLate, t.aiSuggestTill];
+  const suggestions = [t.aiSuggestSummary, t.aiSuggestLate, session.workspace.kind === "hotel" ? t.aiSuggestOccupancy : t.aiSuggestTill];
 
   return (
     <>
@@ -214,6 +240,46 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
               </button>
             </header>
 
+            <div className="relative flex items-center gap-1.5 px-4 pb-2">
+              {(
+                [
+                  { id: "ask", label: t.aiModeAsk },
+                  { id: "translate", label: t.aiModeTranslate },
+                  { id: "meeting", label: t.aiModeMeeting },
+                ] as const
+              ).map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  data-testid={`ai-mode-${m.id}`}
+                  onClick={() => setPanelMode(m.id)}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-[11.5px] font-semibold transition",
+                    panelMode === m.id ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+              {panelMode === "ask" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (voice.speaking) voice.stopSpeaking();
+                    setAutoSpeak((v) => !v);
+                  }}
+                  aria-label={t.aiSpeakReply}
+                  className={cn(
+                    "ms-auto inline-flex h-7 w-7 items-center justify-center rounded-full border transition",
+                    autoSpeak ? "border-violet-300 bg-violet-50 text-violet-700" : "border-zinc-200 bg-white text-zinc-500",
+                  )}
+                >
+                  {voice.speaking || autoSpeak ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                </button>
+              ) : null}
+            </div>
+
+            {panelMode === "ask" ? (
             <div className="relative flex items-center gap-1 px-4 pb-2" role="tablist" aria-label={t.aiName}>
               {chat.desk.tabs.map((tab, index) => {
                 const label = chatTitle(tab.messages, t.aiChatTab.replace("{n}", String(index + 1)));
@@ -264,9 +330,23 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
                 <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
+            ) : null}
 
             <UsageMeter usage={usage} label={t.aiUsage} />
 
+            {panelMode === "translate" ? (
+              <AssistantTranslatorPane
+                workspaceId={session.workspace.id}
+                onUsage={(nextUsage) => {
+                  qc.setQueryData<AssistantStatus>(qk.assistantStatus(session.workspace.id), (old) =>
+                    old ? { ...old, usage: nextUsage } : old,
+                  );
+                }}
+              />
+            ) : panelMode === "meeting" ? (
+              <AssistantMeetingPane workspaceId={session.workspace.id} />
+            ) : (
+            <>
             <div ref={listRef} aria-live="polite" className="relative flex-1 space-y-3 overflow-y-auto px-4 py-4">
               {chat.messages.length === 0 ? (
                 <Welcome
@@ -278,7 +358,14 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
                 />
               ) : (
                 chat.messages.map((m, i) => (
-                  <Bubble key={`${m.id}:${i}`} role={m.role} content={m.content} streaming={m.id === chat.streamingId} />
+                  <Bubble
+                    key={`${m.id}:${i}`}
+                    role={m.role}
+                    content={m.content}
+                    streaming={m.id === chat.streamingId}
+                    onSpeak={m.role === "assistant" ? () => void voice.speak(m.content, locale) : undefined}
+                    speakLabel={t.aiSpeakReply}
+                  />
                 ))
               )}
               {chat.pending ? <Thinking label={t.aiThinking} /> : null}
@@ -322,6 +409,27 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
                   className="max-h-28 min-h-9 flex-1 resize-none bg-transparent px-3 py-2 text-[13.5px] leading-snug text-zinc-900 outline-none placeholder:text-zinc-400 disabled:opacity-50"
                 />
                 <button
+                  type="button"
+                  disabled={exhausted || voice.transcribing || chat.pending}
+                  onClick={() => {
+                    if (voice.recording) {
+                      voice.stopRecording();
+                    } else {
+                      void voice.startRecording(locale, (spoken) => {
+                        setAutoSpeak(true);
+                        submit(spoken);
+                      });
+                    }
+                  }}
+                  aria-label={voice.recording ? t.aiVoiceStop : t.aiVoiceMic}
+                  className={cn(
+                    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition",
+                    voice.recording ? "bg-rose-600 text-white" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:text-zinc-900",
+                  )}
+                >
+                  {voice.recording ? <Square className="h-3.5 w-3.5" /> : <Mic className="h-4 w-4" />}
+                </button>
+                <button
                   type="submit"
                   disabled={!sendable}
                   aria-label={t.aiSend}
@@ -332,6 +440,8 @@ function Assistant({ session, usage }: { session: SessionPayload; usage: Assista
               </form>
               <p className="mt-2 px-2 text-center text-[10.5px] leading-snug text-zinc-400">{t.aiFooter}</p>
             </footer>
+            </>
+            )}
           </motion.section>
         ) : null}
       </AnimatePresence>
@@ -401,7 +511,19 @@ function Welcome({
   );
 }
 
-function Bubble({ role, content, streaming }: { role: "user" | "assistant"; content: string; streaming?: boolean }) {
+function Bubble({
+  role,
+  content,
+  streaming,
+  onSpeak,
+  speakLabel,
+}: {
+  role: "user" | "assistant";
+  content: string;
+  streaming?: boolean;
+  onSpeak?: () => void;
+  speakLabel?: string;
+}) {
   if (role === "user") {
     return (
       <div className="flex justify-end">
@@ -414,9 +536,22 @@ function Bubble({ role, content, streaming }: { role: "user" | "assistant"; cont
   return (
     <div className="flex items-start gap-2">
       <AiMark className="mt-0.5 h-6 w-6" />
-      <p className="max-w-[88%] whitespace-pre-wrap break-words rounded-2xl rounded-es-md border border-zinc-100 bg-zinc-50 px-3.5 py-2.5 text-[13.5px] leading-relaxed text-zinc-800">
-        <Typewriter text={content} active={!!streaming} />
-      </p>
+      <div className="max-w-[88%] space-y-1">
+        <p className="whitespace-pre-wrap break-words rounded-2xl rounded-es-md border border-zinc-100 bg-zinc-50 px-3.5 py-2.5 text-[13.5px] leading-relaxed text-zinc-800">
+          <Typewriter text={content} active={!!streaming} />
+        </p>
+        {onSpeak ? (
+          <button
+            type="button"
+            onClick={onSpeak}
+            aria-label={speakLabel}
+            className="inline-flex items-center gap-1 px-1.5 text-[11px] font-medium text-zinc-500 hover:text-violet-700"
+          >
+            <Volume2 className="h-3 w-3" />
+            {speakLabel}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
