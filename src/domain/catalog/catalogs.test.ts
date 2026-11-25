@@ -11,7 +11,7 @@ describe("vertical catalogs", () => {
   });
 
   it("cafe GM omits reservations and rooms", () => {
-    expect(cafeCatalog.gmTabs()).toEqual(["dashboard", "today", "ops", "feedback"]);
+    expect(cafeCatalog.gmTabs()).toEqual(["dashboard", "today", "ops", "feedback", "inbox"]);
     expect(cafeCatalog.gmTabs()).not.toContain("reservations");
     expect(cafeCatalog.floorOpsDepartment()).toBe("SERVICE");
     expect(cafeCatalog.executiveSignals()).toEqual(["handover", "late_staff", "customer_voice", "breakdown", "daily_close", "checklist", "prep_time", "waste", "cash_variance"]);
@@ -21,7 +21,7 @@ describe("vertical catalogs", () => {
   });
 
   it("hotel GM keeps Guest-pro reservations tab", () => {
-    expect(hotelCatalog.gmTabs()).toEqual(["today", "ops", "dashboard", "reservations", "feedback"]);
+    expect(hotelCatalog.gmTabs()).toEqual(["today", "ops", "dashboard", "reservations", "feedback", "inbox"]);
     expect(hotelCatalog.floorOpsDepartment()).toBe("RECEPTION");
     expect(hotelCatalog.floorOpsTabs()).toEqual(["guests", "live_chat", "requests"]);
     expect(hotelCatalog.dashboardModules()).toEqual(["pulse", "occupancy", "approvals"]);
@@ -29,7 +29,7 @@ describe("vertical catalogs", () => {
   });
 
   it("supply GM has no feedback tab", () => {
-    expect(supplyCatalog.gmTabs()).toEqual(["today", "ops", "dashboard"]);
+    expect(supplyCatalog.gmTabs()).toEqual(["today", "ops", "dashboard", "inbox"]);
     expect(supplyCatalog.floorOpsDepartment()).toBe("SALES");
   });
 });

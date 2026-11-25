@@ -4,6 +4,7 @@ import type { ManagerTab } from "@/domain/catalog";
 import type { SessionPayload } from "@/domain/session/types";
 import { ComingSoonPanel } from "@/components/manager/tabs/coming-soon";
 import { DashboardTab } from "@/components/manager/tabs/dashboard-tab";
+import { InboxTab } from "@/components/manager/tabs/inbox-tab";
 import { FeedbackTab } from "@/components/manager/tabs/feedback-tab";
 import { OpsTab } from "@/components/manager/tabs/ops-tab";
 import { OverviewTab } from "@/components/manager/tabs/overview-tab";
@@ -67,6 +68,8 @@ export function ManagerTabBody({
       return <RoutinesTab session={session} />;
     case "reservations":
       return <ReservationsTab session={session} />;
+    case "inbox":
+      return <InboxTab session={session} />;
     case "guests":
       return <ComingSoonPanel title={t.tabGuests} />;
     case "rooms":

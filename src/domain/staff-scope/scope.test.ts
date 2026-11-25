@@ -37,6 +37,7 @@ describe("staff scope", () => {
       "today",
       "ops",
       "feedback",
+      "inbox",
     ]);
     expect(defaultTab("general_manager", cafeCatalog)).toBe("dashboard");
     expect(visibleTabs("general_manager", hotelCatalog)).toContain("reservations");

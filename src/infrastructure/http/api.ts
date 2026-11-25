@@ -33,6 +33,7 @@ import type {
   OHIPConfigSave,
   OHIPConfigView,
 } from "@/domain/hotel/pms";
+import type { InboxComposeTranslate, InboxList, InboxMessage, InboxStatus } from "@/domain/inbox/types";
 import type { PortfolioView } from "@/domain/portfolio/types";
 import type { ReportAction, ReportKind, ReportView } from "@/domain/report/types";
 import type { LoginResult, SessionPayload, WorkspaceOption } from "@/domain/session/types";
@@ -46,6 +47,10 @@ import {
   mapCafeDefinition,
   mapCafeChecklist,
   mapHotelPMS,
+  mapInboxList,
+  mapInboxMessage,
+  mapInboxStatus,
+  mapInboxComposeTranslate,
   mapHotelProfile,
   mapMeetingList,
   mapMeetingView,
@@ -691,5 +696,66 @@ export class HttpKernelApi implements KernelApi {
       method: "POST",
       body: JSON.stringify(input),
     });
+  }
+
+  getInboxStatus(workspaceId: string): Promise<InboxStatus> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/status`).then(mapInboxStatus);
+  }
+
+  listInbox(workspaceId: string): Promise<InboxList> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/messages`).then(mapInboxList);
+  }
+
+  syncInbox(workspaceId: string): Promise<InboxList> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/sync`, { method: "POST" }).then(mapInboxList);
+  }
+
+  getInboxMessage(workspaceId: string, messageId: string): Promise<InboxMessage> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/messages/${messageId}`).then(mapInboxMessage);
+  }
+
+  enrichInboxMessage(workspaceId: string, messageId: string): Promise<InboxMessage> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/inbox/messages/${messageId}/enrich`, { method: "POST" })
+      .then(mapInboxMessage);
+  }
+
+  saveOutlookApp(workspaceId: string, input: { clientId: string; clientSecret: string; tenant?: string }): Promise<InboxStatus> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/inbox/outlook/app`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(mapInboxStatus);
+  }
+
+  startOutlookConnect(workspaceId: string): Promise<{ authUrl: string }> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/outlook/start`, { method: "POST" });
+  }
+
+  connectInboxDemo(workspaceId: string): Promise<InboxStatus> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/outlook/demo`, { method: "POST" }).then(mapInboxStatus);
+  }
+
+  disconnectInbox(workspaceId: string): Promise<void> {
+    return this.http.request(`/v1/workspaces/${workspaceId}/inbox/connection`, { method: "DELETE" }).then(() => undefined);
+  }
+
+  translateInboxCompose(workspaceId: string, text: string, targetLang: "en" | "tr"): Promise<InboxComposeTranslate> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/inbox/compose/translate`, {
+        method: "POST",
+        body: JSON.stringify({ text, targetLang }),
+      })
+      .then(mapInboxComposeTranslate);
+  }
+
+  sendInboxMail(workspaceId: string, input: { to: string[]; subject: string; body: string }): Promise<void> {
+    return this.http
+      .request(`/v1/workspaces/${workspaceId}/inbox/send`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      })
+      .then(() => undefined);
   }
 }

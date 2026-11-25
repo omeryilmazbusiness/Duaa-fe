@@ -32,6 +32,7 @@ import type {
   OHIPConfigSave,
   OHIPConfigView,
 } from "@/domain/hotel/pms";
+import type { InboxComposeTranslate, InboxList, InboxMessage, InboxStatus } from "@/domain/inbox/types";
 import type { PortfolioView } from "@/domain/portfolio/types";
 import type { ReportAction, ReportKind, ReportView } from "@/domain/report/types";
 import type { LoginResult, SessionPayload, WorkspaceOption } from "@/domain/session/types";
@@ -205,6 +206,17 @@ export interface AssistantPort {
 export interface PortfolioPort {
   getPortfolio(date?: string): Promise<PortfolioView>;
   getHotelPMS(workspaceId: string, date?: string): Promise<HotelPMSView>;
+  getInboxStatus(workspaceId: string): Promise<InboxStatus>;
+  listInbox(workspaceId: string): Promise<InboxList>;
+  syncInbox(workspaceId: string): Promise<InboxList>;
+  getInboxMessage(workspaceId: string, messageId: string): Promise<InboxMessage>;
+  enrichInboxMessage(workspaceId: string, messageId: string): Promise<InboxMessage>;
+  saveOutlookApp(workspaceId: string, input: { clientId: string; clientSecret: string; tenant?: string }): Promise<InboxStatus>;
+  startOutlookConnect(workspaceId: string): Promise<{ authUrl: string }>;
+  connectInboxDemo(workspaceId: string): Promise<InboxStatus>;
+  disconnectInbox(workspaceId: string): Promise<void>;
+  translateInboxCompose(workspaceId: string, text: string, targetLang: "en" | "tr"): Promise<InboxComposeTranslate>;
+  sendInboxMail(workspaceId: string, input: { to: string[]; subject: string; body: string }): Promise<void>;
   saveHotelOHIP(workspaceId: string, input: OHIPConfigSave): Promise<OHIPConfigView>;
   syncHotelOHIP(workspaceId: string, businessDate?: string): Promise<HotelPMSView>;
   importHotelPMS(workspaceId: string, input: HotelPMSImportInput): Promise<HotelPMSView>;

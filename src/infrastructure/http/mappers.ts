@@ -25,6 +25,7 @@ import type {
   PMSSnapshotView,
   ReservationRow,
 } from "@/domain/hotel/pms";
+import type { InboxList, InboxMessage, InboxStatus, InboxComposeTranslate } from "@/domain/inbox/types";
 import type {
   CafeCard,
   CafeProfitability,
@@ -1453,5 +1454,62 @@ export function mapTranscribeView(raw: unknown): TranscribeView {
   return {
     text: str(r.text),
     detectedLanguage: str(r.detectedLanguage),
+  };
+}
+
+
+export function mapInboxStatus(raw: unknown): InboxStatus {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    connected: Boolean(r.connected),
+    provider: typeof r.provider === "string" ? r.provider : undefined,
+    email: typeof r.email === "string" ? r.email : undefined,
+    displayName: typeof r.displayName === "string" ? r.displayName : undefined,
+    lastSyncAt: typeof r.lastSyncAt === "string" ? r.lastSyncAt : undefined,
+    lastSyncStatus: typeof r.lastSyncStatus === "string" ? r.lastSyncStatus : undefined,
+    lastError: typeof r.lastError === "string" ? r.lastError : undefined,
+    unreadCount: typeof r.unreadCount === "number" ? r.unreadCount : 0,
+    outlookReady: Boolean(r.outlookReady),
+    hasAppCredentials: Boolean(r.hasAppCredentials),
+    authUrl: typeof r.authUrl === "string" ? r.authUrl : undefined,
+    redirectUrl: typeof r.redirectUrl === "string" ? r.redirectUrl : undefined,
+  };
+}
+
+export function mapInboxMessage(raw: unknown): InboxMessage {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    id: String(r.id ?? ""),
+    externalId: String(r.externalId ?? ""),
+    folder: String(r.folder ?? "inbox"),
+    fromName: String(r.fromName ?? ""),
+    fromEmail: String(r.fromEmail ?? ""),
+    toEmails: String(r.toEmails ?? ""),
+    subject: String(r.subject ?? ""),
+    bodyText: String(r.bodyText ?? ""),
+    preview: String(r.preview ?? ""),
+    receivedAt: String(r.receivedAt ?? ""),
+    isRead: Boolean(r.isRead),
+    hasAttachments: Boolean(r.hasAttachments),
+    category: String(r.category ?? ""),
+    summary: String(r.summary ?? ""),
+    summaryAr: String(r.summaryAr ?? ""),
+    bodyAr: String(r.bodyAr ?? ""),
+    detectedLanguage: String(r.detectedLanguage ?? ""),
+    enriched: Boolean(r.enriched),
+  };
+}
+
+export function mapInboxList(raw: unknown): InboxList {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const messages = Array.isArray(r.messages) ? r.messages.map(mapInboxMessage) : [];
+  return { status: mapInboxStatus(r.status), messages };
+}
+
+export function mapInboxComposeTranslate(raw: unknown): InboxComposeTranslate {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    translated: String(r.translated ?? ""),
+    targetLang: String(r.targetLang ?? ""),
   };
 }

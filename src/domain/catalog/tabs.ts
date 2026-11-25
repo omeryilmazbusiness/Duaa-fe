@@ -12,6 +12,7 @@ export const MANAGER_TABS = [
   "rooms",
   "requests",
   "feedback",
+  "inbox",
   "team",
   "tasks_staff",
   "tasks_detail",

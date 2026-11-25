@@ -25,5 +25,7 @@ export const qk = {
   hotelPMS: (wid: string, date?: string) => ["hotel", "pms", wid, date ?? "today"] as const,
   workspaceDocs: (wid: string) => ["workspace", "docs", wid] as const,
   assistantMeetings: (wid: string) => ["assistant", "meetings", wid] as const,
+  inbox: (wid: string) => ["inbox", wid] as const,
+  inboxMessage: (wid: string, id: string) => ["inbox", wid, id] as const,
   publicQR: (token: string) => ["public", "qr", token] as const,
 };

@@ -166,7 +166,7 @@ export function ManagerShell({ slug }: { slug: string }) {
         className={
           settingsOpen
             ? "ios-settings min-h-dvh bg-zinc-50 lg:ps-64"
-            : active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "reservations"
+            : active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "reservations" || active === "inbox"
               ? "min-h-dvh bg-[#F9FAFB] lg:ps-64"
               : "lg:ps-64"
         }
@@ -184,7 +184,7 @@ export function ManagerShell({ slug }: { slug: string }) {
           logoutLabel={t.logout}
           settingsLabel={isGm ? t.settings : undefined}
           settingsChrome={settingsOpen}
-          boardChrome={active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "reservations"}
+          boardChrome={active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "reservations" || active === "inbox"}
           onTabChange={setTab}
           onSettings={isGm ? openSettings : undefined}
           onLogout={() => {
@@ -196,7 +196,7 @@ export function ManagerShell({ slug }: { slug: string }) {
           className={
             settingsOpen
               ? "max-w-none px-4 py-5 lg:px-8"
-              : active === "dashboard" || active === "today" || active === "ops" || active === "feedback"
+              : active === "dashboard" || active === "today" || active === "ops" || active === "feedback" || active === "inbox"
                 ? "max-w-[1400px] px-5 py-6 sm:px-8 sm:py-7 lg:px-10"
                 : undefined
           }

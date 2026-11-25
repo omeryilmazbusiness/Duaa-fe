@@ -6,6 +6,7 @@ import {
   ClipboardList,
   DoorOpen,
   Gauge,
+  Inbox,
   LayoutDashboard,
   LayoutGrid,
   MessageCircle,
@@ -40,6 +41,7 @@ export const NAV_DEFS: readonly NavDef[] = [
   { id: "requests", icon: Bell, tone: "rose", label: (t) => t.tabRequests },
   { id: "live_chat", icon: MessageCircle, tone: "indigo", label: (t) => t.tabLiveChat },
   { id: "feedback", icon: MessageSquare, tone: "teal", label: (t) => t.tabFeedback },
+  { id: "inbox", icon: Inbox, tone: "sky", label: (t) => t.tabInbox },
 ];
 
 export function navForTabs(tabs: readonly ManagerTab[]): NavDef[] {

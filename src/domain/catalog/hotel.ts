@@ -2,7 +2,7 @@ import type { VerticalCatalog } from "./catalog";
 import { HOTEL_DEPARTMENTS } from "./departments";
 import type { ManagerTab } from "./tabs";
 
-const GM_TABS: readonly ManagerTab[] = ["today", "ops", "dashboard", "reservations", "feedback"];
+const GM_TABS: readonly ManagerTab[] = ["today", "ops", "dashboard", "reservations", "feedback", "inbox"];
 const DEPT_TABS: readonly ManagerTab[] = [
   "overview",
   "tasks_staff",
